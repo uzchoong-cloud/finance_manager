@@ -1,0 +1,323 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+/* ─── Stripe Design System Tokens ─────────────────────────────── */
+@theme inline {
+  /* Fonts */
+  --font-sans: var(--font-inter), "SF Pro Display", -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: "Source Code Pro", var(--font-geist-mono), "SFMono-Regular", Consolas, monospace;
+  --font-heading: var(--font-inter), "SF Pro Display", -apple-system, BlinkMacSystemFont, sans-serif;
+
+  /* Brand Colors */
+  --color-stripe-purple: #533afd;
+  --color-stripe-purple-hover: #4434d4;
+  --color-stripe-purple-deep: #2e2b8c;
+  --color-stripe-purple-light: #b9b9f9;
+  --color-stripe-purple-mid: #665efd;
+  --color-deep-navy: #061b31;
+  --color-brand-dark: #1c1e54;
+  --color-dark-navy: #0d253d;
+
+  /* Accent */
+  --color-ruby: #ea2261;
+  --color-magenta: #f96bee;
+  --color-magenta-light: #ffd7ef;
+  --color-lemon: #9b6829;
+
+  /* Neutral */
+  --color-label: #273951;
+  --color-body: #64748d;
+  --color-success: #15be53;
+  --color-success-text: #108c3d;
+
+  /* Surfaces & Borders */
+  --color-border-default: #e5edf5;
+  --color-border-purple: #b9b9f9;
+  --color-border-soft-purple: #d6d9fc;
+  --color-border-magenta: #ffd7ef;
+  --color-border-dashed: #362baa;
+
+  /* shadcn token overrides */
+  --color-background: #ffffff;
+  --color-foreground: #061b31;
+  --color-card: #ffffff;
+  --color-card-foreground: #061b31;
+  --color-popover: #ffffff;
+  --color-popover-foreground: #061b31;
+  --color-primary: #533afd;
+  --color-primary-foreground: #ffffff;
+  --color-secondary: #f0f4f8;
+  --color-secondary-foreground: #273951;
+  --color-muted: #f0f4f8;
+  --color-muted-foreground: #64748d;
+  --color-accent: #f0f4f8;
+  --color-accent-foreground: #273951;
+  --color-destructive: #ea2261;
+  --color-border: #e5edf5;
+  --color-input: #e5edf5;
+  --color-ring: #533afd;
+
+  /* Chart colors using brand palette */
+  --color-chart-1: #533afd;
+  --color-chart-2: #15be53;
+  --color-chart-3: #ea2261;
+  --color-chart-4: #f96bee;
+  --color-chart-5: #9b6829;
+
+  /* Radius scale (conservative — 4-8px as per Stripe) */
+  --radius: 0.375rem; /* 6px base */
+  --radius-sm: 0.25rem;  /* 4px */
+  --radius-md: 0.3125rem; /* 5px */
+  --radius-lg: 0.375rem;  /* 6px */
+  --radius-xl: 0.5rem;    /* 8px */
+
+  /* Shadows */
+  --shadow-ambient: rgba(23,23,23,0.06) 0px 3px 6px;
+  --shadow-standard: rgba(23,23,23,0.08) 0px 15px 35px 0px;
+  --shadow-elevated: rgba(50,50,93,0.25) 0px 30px 45px -30px, rgba(0,0,0,0.1) 0px 18px 36px -18px;
+  --shadow-deep: rgba(3,3,39,0.25) 0px 14px 21px -14px, rgba(0,0,0,0.1) 0px 8px 17px -8px;
+}
+
+/* ─── CSS Variable aliases for shadcn compatibility ────────────── */
+:root {
+  --background: #ffffff;
+  --foreground: #061b31;
+  --card: #ffffff;
+  --card-foreground: #061b31;
+  --popover: #ffffff;
+  --popover-foreground: #061b31;
+  --primary: #533afd;
+  --primary-foreground: #ffffff;
+  --secondary: #f0f4f8;
+  --secondary-foreground: #273951;
+  --muted: #f0f4f8;
+  --muted-foreground: #64748d;
+  --accent: #f0f4f8;
+  --accent-foreground: #273951;
+  --destructive: #ea2261;
+  --border: #e5edf5;
+  --input: #e5edf5;
+  --ring: #533afd;
+  --chart-1: #533afd;
+  --chart-2: #15be53;
+  --chart-3: #ea2261;
+  --chart-4: #f96bee;
+  --chart-5: #9b6829;
+  --radius: 0.375rem;
+  --sidebar: #ffffff;
+  --sidebar-foreground: #061b31;
+  --sidebar-primary: #533afd;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #f0f4f8;
+  --sidebar-accent-foreground: #273951;
+  --sidebar-border: #e5edf5;
+  --sidebar-ring: #533afd;
+}
+
+/* ─── Base Layer ───────────────────────────────────────────────── */
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  html {
+    @apply h-full antialiased;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    @apply bg-background text-foreground min-h-full;
+    font-family: var(--font-sans);
+    font-weight: 300;
+    font-feature-settings: "ss01";
+    line-height: 1.4;
+    color: #061b31;
+  }
+
+  /* Headings — weight 300, negative tracking, deep navy */
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-sans);
+    font-weight: 300;
+    font-feature-settings: "ss01";
+    color: #061b31;
+  }
+
+  h1 { font-size: 3rem; line-height: 1.15; letter-spacing: -0.96px; }
+  h2 { font-size: 2rem; line-height: 1.10; letter-spacing: -0.64px; }
+  h3 { font-size: 1.625rem; line-height: 1.12; letter-spacing: -0.26px; }
+  h4 { font-size: 1.375rem; line-height: 1.10; letter-spacing: -0.22px; }
+
+  /* Financial / tabular numbers */
+  .tabular-nums {
+    font-feature-settings: "tnum";
+    font-variant-numeric: tabular-nums;
+  }
+
+  code, kbd, pre, samp {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    font-weight: 500;
+    line-height: 2;
+  }
+}
+
+/* ─── Component Utilities ──────────────────────────────────────── */
+@layer utilities {
+  /* Shadow scale */
+  .shadow-ambient {
+    box-shadow: rgba(23,23,23,0.06) 0px 3px 6px;
+  }
+  .shadow-standard {
+    box-shadow: rgba(23,23,23,0.08) 0px 15px 35px 0px;
+  }
+  .shadow-elevated {
+    box-shadow: rgba(50,50,93,0.25) 0px 30px 45px -30px, rgba(0,0,0,0.1) 0px 18px 36px -18px;
+  }
+  .shadow-deep {
+    box-shadow: rgba(3,3,39,0.25) 0px 14px 21px -14px, rgba(0,0,0,0.1) 0px 8px 17px -8px;
+  }
+
+  /* Typography utilities */
+  .text-display-hero {
+    font-family: var(--font-sans);
+    font-size: 3.5rem;
+    font-weight: 300;
+    line-height: 1.03;
+    letter-spacing: -1.4px;
+    font-feature-settings: "ss01";
+    color: #061b31;
+  }
+  .text-display-large {
+    font-family: var(--font-sans);
+    font-size: 3rem;
+    font-weight: 300;
+    line-height: 1.15;
+    letter-spacing: -0.96px;
+    font-feature-settings: "ss01";
+    color: #061b31;
+  }
+  .text-section-heading {
+    font-family: var(--font-sans);
+    font-size: 2rem;
+    font-weight: 300;
+    line-height: 1.10;
+    letter-spacing: -0.64px;
+    font-feature-settings: "ss01";
+    color: #061b31;
+  }
+  .text-sub-heading-lg {
+    font-family: var(--font-sans);
+    font-size: 1.625rem;
+    font-weight: 300;
+    line-height: 1.12;
+    letter-spacing: -0.26px;
+    font-feature-settings: "ss01";
+    color: #061b31;
+  }
+  .text-sub-heading {
+    font-family: var(--font-sans);
+    font-size: 1.375rem;
+    font-weight: 300;
+    line-height: 1.10;
+    letter-spacing: -0.22px;
+    font-feature-settings: "ss01";
+    color: #061b31;
+  }
+  .text-body-lg {
+    font-family: var(--font-sans);
+    font-size: 1.125rem;
+    font-weight: 300;
+    line-height: 1.40;
+    font-feature-settings: "ss01";
+    color: #64748d;
+  }
+  .text-body {
+    font-family: var(--font-sans);
+    font-size: 1rem;
+    font-weight: 300;
+    line-height: 1.40;
+    font-feature-settings: "ss01";
+  }
+  .text-label {
+    font-family: var(--font-sans);
+    font-size: 0.875rem;
+    font-weight: 400;
+    font-feature-settings: "ss01";
+    color: #273951;
+  }
+  .text-caption {
+    font-family: var(--font-sans);
+    font-size: 0.8125rem;
+    font-weight: 400;
+    font-feature-settings: "ss01";
+    color: #64748d;
+  }
+  .text-caption-sm {
+    font-family: var(--font-sans);
+    font-size: 0.75rem;
+    font-weight: 300;
+    font-feature-settings: "ss01";
+    color: #64748d;
+  }
+  .text-caption-tabular {
+    font-family: var(--font-sans);
+    font-size: 0.75rem;
+    font-weight: 300;
+    letter-spacing: -0.36px;
+    font-feature-settings: "tnum";
+    font-variant-numeric: tabular-nums;
+  }
+  .text-micro {
+    font-family: var(--font-sans);
+    font-size: 0.625rem;
+    font-weight: 300;
+    line-height: 1.15;
+    letter-spacing: 0.1px;
+    font-feature-settings: "ss01";
+  }
+
+  /* Finance number styling */
+  .text-finance-number {
+    font-family: var(--font-sans);
+    font-weight: 300;
+    font-feature-settings: "tnum";
+    font-variant-numeric: tabular-nums;
+    color: #061b31;
+  }
+
+  /* Positive / negative value indicators */
+  .text-positive { color: #108c3d; }
+  .text-negative { color: #ea2261; }
+
+  /* Stripe card base */
+  .card-stripe {
+    background: #ffffff;
+    border: 1px solid #e5edf5;
+    border-radius: 6px;
+    box-shadow: rgba(23,23,23,0.08) 0px 15px 35px 0px;
+  }
+  .card-stripe-elevated {
+    background: #ffffff;
+    border: 1px solid #e5edf5;
+    border-radius: 6px;
+    box-shadow: rgba(50,50,93,0.25) 0px 30px 45px -30px, rgba(0,0,0,0.1) 0px 18px 36px -18px;
+  }
+
+  /* Dark brand section */
+  .section-brand-dark {
+    background: #1c1e54;
+    color: #ffffff;
+  }
+
+  /* Bottom nav safe area */
+  .pb-nav {
+    padding-bottom: calc(4rem + env(safe-area-inset-bottom));
+  }
+  .bottom-nav {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
