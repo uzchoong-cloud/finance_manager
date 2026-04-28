@@ -1,217 +1,138 @@
-import Dexie, { type EntityTable } from "dexie";
-import type {
-  Transaction,
-  StockHolding,
-  StockTransaction,
-  PriceCache,
-} from "@/types";
+import { supabase } from "./supabase";
+import type { Transaction, StockHolding, StockTransaction } from "@/types";
 
-class FinanceDatabase extends Dexie {
-  transactions!: EntityTable<Transaction, "id">;
-  stockHoldings!: EntityTable<StockHolding, "id">;
-  stockTransactions!: EntityTable<StockTransaction, "id">;
-  priceCache!: EntityTable<PriceCache, "ticker">;
-
-  constructor() {
-    super("FinanceManagerDB");
-
-    this.version(1).stores({
-      // transactions: indexed by date, type, category for common queries
-      transactions: "++id, date, type, category, createdAt",
-      // stockHoldings: indexed by ticker (unique)
-      stockHoldings: "++id, &ticker, updatedAt",
-      // stockTransactions: linked to holding, indexed by date
-      stockTransactions: "++id, holdingId, ticker, date, type, createdAt",
-      // priceCache: keyed by ticker, fetch timestamp for expiry checks
-      priceCache: "ticker, fetchedAt",
-    });
-  }
-}
-
-export const db = new FinanceDatabase();
-
-// ─── Transaction CRUD ─────────────────────────────────────────────
+// ─── Transactions ─────────────────────────────────────────────
 
 export async function addTransaction(
-  data: Omit<Transaction, "id" | "createdAt">
-): Promise<number> {
-  const id = await db.transactions.add({ ...data, createdAt: Date.now() });
-  return id as number;
-}
-
-export async function updateTransaction(
-  id: number,
-  data: Partial<Omit<Transaction, "id" | "createdAt">>
+  data: Omit<Transaction, "id" | "createdAt" | "userId">
 ): Promise<void> {
-  await db.transactions.update(id, data);
+  const { error } = await supabase.from("transactions").insert({
+    type: data.type, amount: data.amount, category: data.category,
+    description: data.description, date: data.date,
+  });
+  if (error) throw new Error(error.message);
 }
 
-export async function deleteTransaction(id: number): Promise<void> {
-  await db.transactions.delete(id);
-}
-
-export async function getTransactionsByDateRange(
-  from: string,
-  to: string
-): Promise<Transaction[]> {
-  return db.transactions
-    .where("date")
-    .between(from, to, true, true)
-    .sortBy("date");
-}
-
-export async function getTransactionsByMonth(
-  year: number,
-  month: number
-): Promise<Transaction[]> {
-  const from = `${year}-${String(month).padStart(2, "0")}-01`;
-  const to = `${year}-${String(month).padStart(2, "0")}-31`;
-  return getTransactionsByDateRange(from, to);
+export async function deleteTransaction(id: string): Promise<void> {
+  const { error } = await supabase.from("transactions").delete().eq("id", id);
+  if (error) throw new Error(error.message);
 }
 
 export async function getAllTransactions(): Promise<Transaction[]> {
-  return db.transactions.orderBy("date").reverse().toArray();
+  const { data, error } = await supabase
+    .from("transactions").select("*").order("date", { ascending: false });
+  if (error) throw new Error(error.message);
+  return (data ?? []).map(mapTransaction);
 }
 
-// ─── Stock Holdings CRUD ──────────────────────────────────────────
+function mapTransaction(row: Record<string, unknown>): Transaction {
+  return {
+    id: row.id as string, userId: row.user_id as string,
+    type: row.type as Transaction["type"], amount: Number(row.amount),
+    category: row.category as Transaction["category"],
+    description: row.description as string, date: row.date as string,
+    createdAt: new Date(row.created_at as string).getTime(),
+  };
+}
+
+// ─── Stock Holdings ───────────────────────────────────────────
 
 export async function addStockHolding(
-  ticker: string,
-  name: string,
-  shares: number,
-  pricePerShare: number,
-  date: string
-): Promise<number> {
-  const now = Date.now();
-  const holdingId = (await db.stockHoldings.add({
-    ticker: ticker.toUpperCase(),
-    name,
-    shares,
-    averageCostPerShare: pricePerShare,
-    createdAt: now,
-    updatedAt: now,
-  })) as number;
-  await db.stockTransactions.add({
-    holdingId,
-    ticker: ticker.toUpperCase(),
-    type: "buy",
-    shares,
-    pricePerShare,
-    date,
-    createdAt: now,
+  ticker: string, name: string, shares: number, pricePerShare: number, date: string
+): Promise<string> {
+  const { data: holding, error: holdingErr } = await supabase
+    .from("stock_holdings")
+    .insert({ ticker: ticker.toUpperCase(), name, shares, average_cost_per_share: pricePerShare })
+    .select().single();
+  if (holdingErr) throw new Error(holdingErr.message);
+  const { error: txErr } = await supabase.from("stock_transactions").insert({
+    holding_id: holding.id, ticker: ticker.toUpperCase(),
+    type: "buy", shares, price_per_share: pricePerShare, date,
   });
-  return holdingId;
+  if (txErr) throw new Error(txErr.message);
+  return holding.id as string;
 }
 
 export async function buyShares(
-  holdingId: number,
-  shares: number,
-  pricePerShare: number,
-  date: string,
-  notes?: string
+  holdingId: string, shares: number, pricePerShare: number, date: string, notes?: string
 ): Promise<void> {
-  const holding = await db.stockHoldings.get(holdingId);
-  if (!holding) throw new Error(`Holding ${holdingId} not found`);
-
-  // Weighted average cost basis
-  const totalShares = holding.shares + shares;
-  const newAvgCost =
-    (holding.shares * holding.averageCostPerShare + shares * pricePerShare) /
-    totalShares;
-
-  const now = Date.now();
-  await db.stockHoldings.update(holdingId, {
-    shares: totalShares,
-    averageCostPerShare: newAvgCost,
-    updatedAt: now,
-  });
-  await db.stockTransactions.add({
-    holdingId,
-    ticker: holding.ticker,
-    type: "buy",
-    shares,
-    pricePerShare,
-    date,
-    notes,
-    createdAt: now,
+  const { data: h, error } = await supabase
+    .from("stock_holdings").select("shares, average_cost_per_share, ticker").eq("id", holdingId).single();
+  if (error || !h) throw new Error("Holding not found");
+  const totalShares = Number(h.shares) + shares;
+  const newAvg = (Number(h.shares) * Number(h.average_cost_per_share) + shares * pricePerShare) / totalShares;
+  await supabase.from("stock_holdings")
+    .update({ shares: totalShares, average_cost_per_share: newAvg, updated_at: new Date().toISOString() })
+    .eq("id", holdingId);
+  await supabase.from("stock_transactions").insert({
+    holding_id: holdingId, ticker: h.ticker, type: "buy", shares, price_per_share: pricePerShare, date, notes,
   });
 }
 
 export async function sellShares(
-  holdingId: number,
-  shares: number,
-  pricePerShare: number,
-  date: string,
-  notes?: string
+  holdingId: string, shares: number, pricePerShare: number, date: string, notes?: string
 ): Promise<void> {
-  const holding = await db.stockHoldings.get(holdingId);
-  if (!holding) throw new Error(`Holding ${holdingId} not found`);
-  if (shares > holding.shares)
-    throw new Error("Cannot sell more shares than held");
-
-  const remainingShares = holding.shares - shares;
-  const now = Date.now();
-
-  if (remainingShares === 0) {
-    await db.stockHoldings.delete(holdingId);
+  const { data: h, error } = await supabase
+    .from("stock_holdings").select("shares, ticker").eq("id", holdingId).single();
+  if (error || !h) throw new Error("Holding not found");
+  if (shares > Number(h.shares)) throw new Error("Cannot sell more shares than held");
+  const remaining = Number(h.shares) - shares;
+  if (remaining === 0) {
+    await deleteStockHolding(holdingId);
   } else {
-    // Cost basis unchanged on sell (FIFO average)
-    await db.stockHoldings.update(holdingId, {
-      shares: remainingShares,
-      updatedAt: now,
-    });
+    await supabase.from("stock_holdings")
+      .update({ shares: remaining, updated_at: new Date().toISOString() }).eq("id", holdingId);
   }
-
-  await db.stockTransactions.add({
-    holdingId,
-    ticker: holding.ticker,
-    type: "sell",
-    shares,
-    pricePerShare,
-    date,
-    notes,
-    createdAt: now,
+  await supabase.from("stock_transactions").insert({
+    holding_id: holdingId, ticker: h.ticker, type: "sell", shares, price_per_share: pricePerShare, date, notes,
   });
 }
 
-export async function deleteStockHolding(holdingId: number): Promise<void> {
-  await db.transaction("rw", db.stockHoldings, db.stockTransactions, async () => {
-    await db.stockTransactions.where("holdingId").equals(holdingId).delete();
-    await db.stockHoldings.delete(holdingId);
-  });
+export async function deleteStockHolding(holdingId: string): Promise<void> {
+  const { error } = await supabase.from("stock_holdings").delete().eq("id", holdingId);
+  if (error) throw new Error(error.message);
 }
 
 export async function getAllStockHoldings(): Promise<StockHolding[]> {
-  return db.stockHoldings.orderBy("ticker").toArray();
+  const { data, error } = await supabase.from("stock_holdings").select("*").order("ticker");
+  if (error) throw new Error(error.message);
+  return (data ?? []).map((row) => ({
+    id: row.id as string, userId: row.user_id as string,
+    ticker: row.ticker as string, name: row.name as string,
+    shares: Number(row.shares), averageCostPerShare: Number(row.average_cost_per_share),
+    createdAt: new Date(row.created_at as string).getTime(),
+    updatedAt: new Date(row.updated_at as string).getTime(),
+  }));
 }
 
-export async function getStockTransactions(
-  holdingId: number
-): Promise<StockTransaction[]> {
-  return db.stockTransactions
-    .where("holdingId")
-    .equals(holdingId)
-    .sortBy("date");
+export async function getStockTransactions(holdingId: string): Promise<StockTransaction[]> {
+  const { data, error } = await supabase
+    .from("stock_transactions").select("*").eq("holding_id", holdingId).order("date");
+  if (error) throw new Error(error.message);
+  return (data ?? []).map((row) => ({
+    id: row.id as string, userId: row.user_id as string, holdingId: row.holding_id as string,
+    ticker: row.ticker as string, type: row.type as StockTransaction["type"],
+    shares: Number(row.shares), pricePerShare: Number(row.price_per_share),
+    date: row.date as string, notes: row.notes as string | undefined,
+    createdAt: new Date(row.created_at as string).getTime(),
+  }));
 }
 
-// ─── Price Cache ──────────────────────────────────────────────────
+// ─── Price cache (localStorage, 5 min TTL) ────────────────────
+const PRICE_TTL_MS = 5 * 60 * 1000;
 
-const PRICE_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
-
-export async function getCachedPrice(ticker: string): Promise<number | null> {
-  const cached = await db.priceCache.get(ticker.toUpperCase());
-  if (!cached) return null;
-  if (Date.now() - cached.fetchedAt > PRICE_CACHE_TTL_MS) return null;
-  return cached.price;
+export function getCachedPrice(ticker: string): number | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = localStorage.getItem(`price_${ticker}`);
+    if (!raw) return null;
+    const { price, fetchedAt } = JSON.parse(raw) as { price: number; fetchedAt: number };
+    if (Date.now() - fetchedAt > PRICE_TTL_MS) return null;
+    return price;
+  } catch { return null; }
 }
 
-export async function setCachedPrice(
-  ticker: string,
-  price: number
-): Promise<void> {
-  await db.priceCache.put({
-    ticker: ticker.toUpperCase(),
-    price,
-    fetchedAt: Date.now(),
-  });
+export function setCachedPrice(ticker: string, price: number): void {
+  if (typeof window === "undefined") return;
+  localStorage.setItem(`price_${ticker}`, JSON.stringify({ price, fetchedAt: Date.now() }));
 }

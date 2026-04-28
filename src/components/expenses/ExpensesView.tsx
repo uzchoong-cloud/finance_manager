@@ -1,9 +1,8 @@
 "use client";
 
-import { useState } from "react";
-import { useLiveQuery } from "dexie-react-hooks";
+import { useState, useMemo } from "react";
 import { toast } from "sonner";
-import { db, addTransaction, deleteTransaction } from "@/lib/db";
+import { addTransaction, deleteTransaction } from "@/lib/db";
 import { useFinanceStore } from "@/store/useFinanceStore";
 import { CategoryBadge } from "@/components/shared/CategoryBadge";
 import { StatCard } from "@/components/shared/StatCard";
@@ -11,37 +10,13 @@ import { ExpenseCalendar } from "./ExpenseCalendar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
-  formatCurrency,
-  formatCurrencyCompact,
-  formatDate,
-  todayISO,
-  getMonthName,
-} from "@/lib/format";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { formatCurrency, formatCurrencyCompact, formatDate, todayISO, getMonthName } from "@/lib/format";
 import type { TransactionCategory, TransactionType } from "@/types";
 
-const CATEGORIES: TransactionCategory[] = [
-  "food", "transport", "housing", "utilities", "healthcare",
-  "entertainment", "shopping", "education", "salary", "investment",
-  "freelance", "other",
-];
-
-const INCOME_CATEGORIES: TransactionCategory[] = [
-  "salary", "investment", "freelance", "other",
-];
+const CATEGORIES: TransactionCategory[] = ["food","transport","housing","utilities","healthcare","entertainment","shopping","education","salary","investment","freelance","other"];
+const INCOME_CATEGORIES: TransactionCategory[] = ["salary","investment","freelance","other"];
 
 export function ExpensesView() {
   const [open, setOpen] = useState(false);
@@ -58,26 +33,24 @@ export function ExpensesView() {
   const selectedYear = useFinanceStore((s) => s.selectedYear);
   const setSelectedPeriod = useFinanceStore((s) => s.setSelectedPeriod);
   const getExpenseSummary = useFinanceStore((s) => s.getExpenseSummary);
+  const transactions = useFinanceStore((s) => s.transactions);
+  const transactionsLoaded = useFinanceStore((s) => s.transactionsLoaded);
 
   const { totalIncome, totalExpenses, netCashFlow } = getExpenseSummary();
 
-  // All transactions for the month — used by calendar for dots
   const monthKey = `${selectedYear}-${String(selectedMonth).padStart(2, "0")}`;
-  const monthTransactions = useLiveQuery(
-    () =>
-      db.transactions
-        .where("date")
-        .between(`${monthKey}-01`, `${monthKey}-31`, true, true)
-        .sortBy("date"),
-    [monthKey]
+
+  const monthTransactions = useMemo(
+    () => transactions.filter((t) => t.date.startsWith(monthKey)),
+    [transactions, monthKey]
   );
 
-  // Filtered list — either a single day or the full month
-  const visibleTransactions = monthTransactions
-    ? selectedDate
-      ? [...monthTransactions].filter((t) => t.date === selectedDate).reverse()
-      : [...monthTransactions].reverse()
-    : undefined;
+  const visibleTransactions = useMemo(
+    () => selectedDate
+      ? monthTransactions.filter((t) => t.date === selectedDate)
+      : monthTransactions,
+    [monthTransactions, selectedDate]
+  );
 
   const handleTypeChange = (t: TransactionType) => {
     setType(t);
@@ -87,33 +60,24 @@ export function ExpensesView() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const parsedAmount = parseFloat(amount);
-    if (!parsedAmount || parsedAmount <= 0) {
-      toast.error("Enter a valid amount");
-      return;
-    }
+    if (!parsedAmount || parsedAmount <= 0) { toast.error("Enter a valid amount"); return; }
     setSaving(true);
     try {
       await addTransaction({ type, amount: parsedAmount, category, description, date });
       await loadTransactions();
       toast.success(`${type === "income" ? "Income" : "Expense"} added`);
       setOpen(false);
-      setAmount("");
-      setDescription("");
-      setDate(todayISO());
-    } catch {
-      toast.error("Failed to save transaction");
-    } finally {
-      setSaving(false);
-    }
+      setAmount(""); setDescription(""); setDate(todayISO());
+    } catch { toast.error("Failed to save transaction"); }
+    finally { setSaving(false); }
   };
 
-  const handleDelete = async (id: number) => {
+  const handleDelete = async (id: string) => {
     await deleteTransaction(id);
     await loadTransactions();
     toast.success("Transaction deleted");
   };
 
-  // Month navigation — clears selected date when switching months
   const prevMonth = () => {
     setSelectedDate(null);
     if (selectedMonth === 1) setSelectedPeriod(selectedYear - 1, 12);
@@ -132,246 +96,67 @@ export function ExpensesView() {
     return selectedYear === now.getFullYear() && selectedMonth === now.getMonth() + 1;
   })();
 
-  const visibleCategories =
-    type === "income"
-      ? INCOME_CATEGORIES
-      : CATEGORIES.filter((c) => !INCOME_CATEGORIES.includes(c));
-
+  const visibleCategories = type === "income" ? INCOME_CATEGORIES : CATEGORIES.filter((c) => !INCOME_CATEGORIES.includes(c));
   const listLabel = selectedDate
-    ? new Date(selectedDate + "T00:00:00").toLocaleDateString("en-US", {
-        month: "long",
-        day: "numeric",
-      })
+    ? new Date(selectedDate + "T00:00:00").toLocaleDateString("en-US", { month: "long", day: "numeric" })
     : getMonthName(selectedMonth);
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex items-start justify-between">
         <div>
-          <h1
-            style={{
-              fontSize: "1.75rem",
-              fontWeight: 300,
-              letterSpacing: "-0.5px",
-              fontFeatureSettings: '"ss01"',
-              color: "#061b31",
-              lineHeight: 1.2,
-            }}
-          >
-            Expenses
-          </h1>
-          <p
-            style={{
-              fontSize: "14px",
-              color: "#64748d",
-              fontWeight: 300,
-              marginTop: 4,
-              fontFeatureSettings: '"ss01"',
-            }}
-          >
-            Track your income and spending
-          </p>
+          <h1 style={{ fontSize: "1.75rem", fontWeight: 300, letterSpacing: "-0.5px", fontFeatureSettings: '"ss01"', color: "#061b31", lineHeight: 1.2 }}>Expenses</h1>
+          <p style={{ fontSize: "14px", color: "#64748d", fontWeight: 300, marginTop: 4, fontFeatureSettings: '"ss01"' }}>Track your income and spending</p>
         </div>
-        <Button
-          onClick={() => setOpen(true)}
-          style={{
-            background: "#533afd",
-            color: "#fff",
-            borderRadius: "4px",
-            fontFeatureSettings: '"ss01"',
-            fontWeight: 400,
-            fontSize: "14px",
-            border: "none",
-            padding: "8px 16px",
-          }}
-        >
+        <Button onClick={() => setOpen(true)} style={{ background: "#533afd", color: "#fff", borderRadius: "4px", fontFeatureSettings: '"ss01"', fontWeight: 400, fontSize: "14px", border: "none", padding: "8px 16px" }}>
           + Add
         </Button>
 
         <Dialog open={open} onOpenChange={setOpen}>
-          <DialogContent
-            style={{ borderRadius: "8px", border: "1px solid #e5edf5", maxWidth: 440 }}
-          >
+          <DialogContent style={{ borderRadius: "8px", border: "1px solid #e5edf5", maxWidth: 440 }}>
             <DialogHeader>
-              <DialogTitle
-                style={{
-                  fontSize: "1.125rem",
-                  fontWeight: 300,
-                  color: "#061b31",
-                  fontFeatureSettings: '"ss01"',
-                  letterSpacing: "-0.2px",
-                }}
-              >
-                New Transaction
-              </DialogTitle>
+              <DialogTitle style={{ fontSize: "1.125rem", fontWeight: 300, color: "#061b31", fontFeatureSettings: '"ss01"', letterSpacing: "-0.2px" }}>New Transaction</DialogTitle>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4 pt-2">
-              {/* Type toggle */}
-              <div
-                className="flex rounded overflow-hidden"
-                style={{ border: "1px solid #e5edf5" }}
-              >
+              <div className="flex rounded overflow-hidden" style={{ border: "1px solid #e5edf5" }}>
                 {(["expense", "income"] as TransactionType[]).map((t) => (
-                  <button
-                    key={t}
-                    type="button"
-                    onClick={() => handleTypeChange(t)}
-                    className="flex-1 py-2 text-[13px] transition-colors capitalize"
-                    style={{
-                      fontFeatureSettings: '"ss01"',
-                      fontWeight: 400,
-                      background: type === t ? "#533afd" : "transparent",
-                      color: type === t ? "#fff" : "#273951",
-                      border: "none",
-                      cursor: "pointer",
-                    }}
-                  >
+                  <button key={t} type="button" onClick={() => handleTypeChange(t)} className="flex-1 py-2 text-[13px] transition-colors capitalize"
+                    style={{ fontFeatureSettings: '"ss01"', fontWeight: 400, background: type === t ? "#533afd" : "transparent", color: type === t ? "#fff" : "#273951", border: "none", cursor: "pointer" }}>
                     {t}
                   </button>
                 ))}
               </div>
-
               <div className="space-y-1">
-                <Label
-                  style={{
-                    fontFeatureSettings: '"ss01"',
-                    color: "#273951",
-                    fontSize: "13px",
-                  }}
-                >
-                  Amount
-                </Label>
+                <Label style={{ fontFeatureSettings: '"ss01"', color: "#273951", fontSize: "13px" }}>Amount</Label>
                 <div className="relative">
-                  <span
-                    className="absolute left-3 top-1/2 -translate-y-1/2 text-[14px]"
-                    style={{ color: "#64748d" }}
-                  >
-                    $
-                  </span>
-                  <Input
-                    type="number"
-                    min="0.01"
-                    step="0.01"
-                    placeholder="0.00"
-                    value={amount}
-                    onChange={(e) => setAmount(e.target.value)}
-                    className="pl-7"
-                    required
-                    style={{
-                      fontFeatureSettings: '"tnum"',
-                      fontSize: "14px",
-                      borderRadius: "4px",
-                      border: "1px solid #e5edf5",
-                    }}
-                  />
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[14px]" style={{ color: "#64748d" }}>$</span>
+                  <Input type="number" min="0.01" step="0.01" placeholder="0.00" value={amount} onChange={(e) => setAmount(e.target.value)} className="pl-7" required
+                    style={{ fontFeatureSettings: '"tnum"', fontSize: "14px", borderRadius: "4px", border: "1px solid #e5edf5" }} />
                 </div>
               </div>
-
               <div className="space-y-1">
-                <Label
-                  style={{
-                    fontFeatureSettings: '"ss01"',
-                    color: "#273951",
-                    fontSize: "13px",
-                  }}
-                >
-                  Category
-                </Label>
-                <Select
-                  value={category}
-                  onValueChange={(v) => setCategory(v as TransactionCategory)}
-                >
-                  <SelectTrigger
-                    style={{
-                      borderRadius: "4px",
-                      border: "1px solid #e5edf5",
-                      fontSize: "13px",
-                      fontFeatureSettings: '"ss01"',
-                    }}
-                  >
-                    <SelectValue />
-                  </SelectTrigger>
+                <Label style={{ fontFeatureSettings: '"ss01"', color: "#273951", fontSize: "13px" }}>Category</Label>
+                <Select value={category} onValueChange={(v) => setCategory(v as TransactionCategory)}>
+                  <SelectTrigger style={{ borderRadius: "4px", border: "1px solid #e5edf5", fontSize: "13px", fontFeatureSettings: '"ss01"' }}><SelectValue /></SelectTrigger>
                   <SelectContent>
                     {visibleCategories.map((c) => (
-                      <SelectItem
-                        key={c}
-                        value={c}
-                        style={{
-                          fontSize: "13px",
-                          fontFeatureSettings: '"ss01"',
-                          textTransform: "capitalize",
-                        }}
-                      >
-                        {c}
-                      </SelectItem>
+                      <SelectItem key={c} value={c} style={{ fontSize: "13px", fontFeatureSettings: '"ss01"', textTransform: "capitalize" }}>{c}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
-
               <div className="space-y-1">
-                <Label
-                  style={{
-                    fontFeatureSettings: '"ss01"',
-                    color: "#273951",
-                    fontSize: "13px",
-                  }}
-                >
-                  Description
-                </Label>
-                <Input
-                  placeholder="e.g. Lunch at Chipotle"
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  required
-                  style={{
-                    borderRadius: "4px",
-                    border: "1px solid #e5edf5",
-                    fontSize: "14px",
-                    fontFeatureSettings: '"ss01"',
-                  }}
-                />
+                <Label style={{ fontFeatureSettings: '"ss01"', color: "#273951", fontSize: "13px" }}>Description</Label>
+                <Input placeholder="e.g. Lunch at Chipotle" value={description} onChange={(e) => setDescription(e.target.value)} required
+                  style={{ borderRadius: "4px", border: "1px solid #e5edf5", fontSize: "14px", fontFeatureSettings: '"ss01"' }} />
               </div>
-
               <div className="space-y-1">
-                <Label
-                  style={{
-                    fontFeatureSettings: '"ss01"',
-                    color: "#273951",
-                    fontSize: "13px",
-                  }}
-                >
-                  Date
-                </Label>
-                <Input
-                  type="date"
-                  value={date}
-                  onChange={(e) => setDate(e.target.value)}
-                  required
-                  style={{
-                    borderRadius: "4px",
-                    border: "1px solid #e5edf5",
-                    fontSize: "14px",
-                    fontFeatureSettings: '"ss01"',
-                  }}
-                />
+                <Label style={{ fontFeatureSettings: '"ss01"', color: "#273951", fontSize: "13px" }}>Date</Label>
+                <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} required
+                  style={{ borderRadius: "4px", border: "1px solid #e5edf5", fontSize: "14px" }} />
               </div>
-
-              <Button
-                type="submit"
-                disabled={saving}
-                className="w-full"
-                style={{
-                  background: "#533afd",
-                  color: "#fff",
-                  borderRadius: "4px",
-                  fontFeatureSettings: '"ss01"',
-                  fontWeight: 400,
-                  fontSize: "14px",
-                  border: "none",
-                }}
-              >
+              <Button type="submit" disabled={saving} className="w-full"
+                style={{ background: "#533afd", color: "#fff", borderRadius: "4px", fontFeatureSettings: '"ss01"', fontWeight: 400, fontSize: "14px", border: "none" }}>
                 {saving ? "Saving…" : "Save Transaction"}
               </Button>
             </form>
@@ -379,134 +164,42 @@ export function ExpensesView() {
         </Dialog>
       </div>
 
-      {/* Calendar — replaces the old month navigator */}
-      <ExpenseCalendar
-        year={selectedYear}
-        month={selectedMonth}
-        transactions={monthTransactions ?? []}
-        selectedDate={selectedDate}
-        onSelectDate={setSelectedDate}
-        onPrevMonth={prevMonth}
-        onNextMonth={nextMonth}
-        isNextMonthDisabled={isNextMonthDisabled}
-      />
+      <ExpenseCalendar year={selectedYear} month={selectedMonth} transactions={monthTransactions}
+        selectedDate={selectedDate} onSelectDate={setSelectedDate} onPrevMonth={prevMonth} onNextMonth={nextMonth} isNextMonthDisabled={isNextMonthDisabled} />
 
-      {/* Summary stats */}
       <div className="grid grid-cols-3 gap-3">
         <StatCard label="Income" value={formatCurrencyCompact(totalIncome)} trend="up" />
         <StatCard label="Expenses" value={formatCurrencyCompact(totalExpenses)} trend="down" />
-        <StatCard
-          label="Net"
-          value={formatCurrencyCompact(netCashFlow)}
-          trend={netCashFlow >= 0 ? "up" : "down"}
-        />
+        <StatCard label="Net" value={formatCurrencyCompact(netCashFlow)} trend={netCashFlow >= 0 ? "up" : "down"} />
       </div>
 
-      {/* Transaction list */}
       <div>
-        <h2
-          style={{
-            fontSize: "15px",
-            fontWeight: 400,
-            color: "#061b31",
-            fontFeatureSettings: '"ss01"',
-            marginBottom: 12,
-          }}
-        >
-          {listLabel}
-        </h2>
-        {visibleTransactions === undefined ? (
-          <div className="space-y-2">
-            {[...Array(4)].map((_, i) => (
-              <div
-                key={i}
-                className="h-14 rounded-md animate-pulse"
-                style={{ background: "#f0f4f8" }}
-              />
-            ))}
-          </div>
+        <h2 style={{ fontSize: "15px", fontWeight: 400, color: "#061b31", fontFeatureSettings: '"ss01"', marginBottom: 12 }}>{listLabel}</h2>
+        {!transactionsLoaded ? (
+          <div className="space-y-2">{[...Array(4)].map((_, i) => <div key={i} className="h-14 rounded-md animate-pulse" style={{ background: "#f0f4f8" }} />)}</div>
         ) : visibleTransactions.length === 0 ? (
-          <div
-            className="py-12 text-center rounded-lg"
-            style={{ border: "1px dashed #b9b9f9" }}
-          >
-            <p
-              style={{
-                fontSize: "14px",
-                color: "#64748d",
-                fontFeatureSettings: '"ss01"',
-                fontWeight: 300,
-              }}
-            >
-              No transactions for {listLabel}.
-            </p>
+          <div className="py-12 text-center rounded-lg" style={{ border: "1px dashed #b9b9f9" }}>
+            <p style={{ fontSize: "14px", color: "#64748d", fontFeatureSettings: '"ss01"', fontWeight: 300 }}>No transactions for {listLabel}.</p>
           </div>
         ) : (
-          <div
-            className="rounded-lg overflow-hidden"
-            style={{
-              border: "1px solid #e5edf5",
-              boxShadow: "rgba(23,23,23,0.08) 0px 15px 35px 0px",
-            }}
-          >
+          <div className="rounded-lg overflow-hidden" style={{ border: "1px solid #e5edf5", boxShadow: "rgba(23,23,23,0.08) 0px 15px 35px 0px" }}>
             {visibleTransactions.map((t, idx) => (
-              <div
-                key={t.id}
-                className="flex items-center justify-between px-4 py-3 bg-white hover:bg-[#fafbfc] transition-colors group"
-                style={{ borderTop: idx > 0 ? "1px solid #e5edf5" : "none" }}
-              >
+              <div key={t.id} className="flex items-center justify-between px-4 py-3 bg-white hover:bg-[#fafbfc] transition-colors group"
+                style={{ borderTop: idx > 0 ? "1px solid #e5edf5" : "none" }}>
                 <div className="flex items-center gap-3 min-w-0">
                   <CategoryBadge category={t.category} />
                   <div className="min-w-0">
-                    <p
-                      className="truncate"
-                      style={{
-                        fontSize: "14px",
-                        fontWeight: 300,
-                        color: "#061b31",
-                        fontFeatureSettings: '"ss01"',
-                      }}
-                    >
-                      {t.description}
-                    </p>
-                    <p
-                      style={{
-                        fontSize: "11px",
-                        color: "#64748d",
-                        fontFeatureSettings: '"ss01"',
-                      }}
-                    >
-                      {formatDate(t.date)}
-                    </p>
+                    <p className="truncate" style={{ fontSize: "14px", fontWeight: 300, color: "#061b31", fontFeatureSettings: '"ss01"' }}>{t.description}</p>
+                    <p style={{ fontSize: "11px", color: "#64748d", fontFeatureSettings: '"ss01"' }}>{formatDate(t.date)}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3 ml-2">
-                  <span
-                    style={{
-                      fontSize: "14px",
-                      fontWeight: 400,
-                      fontFeatureSettings: '"tnum"',
-                      fontVariantNumeric: "tabular-nums",
-                      color: t.type === "income" ? "#108c3d" : "#061b31",
-                      whiteSpace: "nowrap",
-                    }}
-                  >
-                    {t.type === "income" ? "+" : "-"}
-                    {formatCurrency(t.amount)}
+                  <span style={{ fontSize: "14px", fontWeight: 400, fontFeatureSettings: '"tnum"', fontVariantNumeric: "tabular-nums", color: t.type === "income" ? "#108c3d" : "#061b31", whiteSpace: "nowrap" }}>
+                    {t.type === "income" ? "+" : "-"}{formatCurrency(t.amount)}
                   </span>
-                  <button
-                    onClick={() => t.id && handleDelete(t.id)}
+                  <button onClick={() => t.id && handleDelete(t.id)}
                     className="opacity-0 group-hover:opacity-100 transition-opacity text-[11px] px-1.5 py-0.5 rounded"
-                    style={{
-                      color: "#ea2261",
-                      background: "rgba(234,34,97,0.08)",
-                      border: "none",
-                      cursor: "pointer",
-                      borderRadius: "4px",
-                    }}
-                  >
-                    ✕
-                  </button>
+                    style={{ color: "#ea2261", background: "rgba(234,34,97,0.08)", border: "none", cursor: "pointer", borderRadius: "4px" }}>✕</button>
                 </div>
               </div>
             ))}

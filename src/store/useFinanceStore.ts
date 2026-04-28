@@ -1,48 +1,25 @@
 import { create } from "zustand";
 import { subscribeWithSelector } from "zustand/middleware";
-import type {
-  Transaction,
-  StockHolding,
-  StockWithValue,
-  PortfolioSummary,
-  ExpenseSummary,
-  TransactionCategory,
-} from "@/types";
-import {
-  getAllTransactions,
-  getAllStockHoldings,
-  getCachedPrice,
-  setCachedPrice,
-} from "@/lib/db";
+import type { Transaction, StockHolding, StockWithValue, PortfolioSummary, ExpenseSummary, TransactionCategory } from "@/types";
+import { getAllTransactions, getAllStockHoldings, getCachedPrice, setCachedPrice } from "@/lib/db";
 
-interface PriceFetchState {
-  [ticker: string]: "idle" | "loading" | "error";
-}
+interface PriceFetchState { [ticker: string]: "idle" | "loading" | "error" }
 
 interface FinanceState {
-  // Raw data
   transactions: Transaction[];
   stockHoldings: StockHolding[];
   stockPrices: Record<string, number>;
   priceFetchState: PriceFetchState;
-
-  // Loading flags
   transactionsLoaded: boolean;
   holdingsLoaded: boolean;
-
-  // Active filters
   selectedMonth: number;
   selectedYear: number;
-
-  // Actions
   loadTransactions: () => Promise<void>;
   loadStockHoldings: () => Promise<void>;
   loadAll: () => Promise<void>;
   setStockPrice: (ticker: string, price: number) => void;
   fetchStockPrices: () => Promise<void>;
   setSelectedPeriod: (year: number, month: number) => void;
-
-  // Selectors (computed — called inline, not stored)
   getPortfolioSummary: () => PortfolioSummary;
   getExpenseSummary: () => ExpenseSummary;
   getNetWorth: () => number | null;
@@ -76,58 +53,34 @@ export const useFinanceStore = create<FinanceState>()(
       await fetchStockPrices();
     },
 
-    setStockPrice: (ticker, price) => {
-      set((s) => ({ stockPrices: { ...s.stockPrices, [ticker]: price } }));
-    },
+    setStockPrice: (ticker, price) =>
+      set((s) => ({ stockPrices: { ...s.stockPrices, [ticker]: price } })),
 
     fetchStockPrices: async () => {
       const { stockHoldings } = get();
       if (stockHoldings.length === 0) return;
-
-      const updates: Record<string, number> = {};
-      const fetchStates: PriceFetchState = {};
-
       await Promise.allSettled(
         stockHoldings.map(async ({ ticker }) => {
-          fetchStates[ticker] = "loading";
-          set((s) => ({
-            priceFetchState: { ...s.priceFetchState, [ticker]: "loading" },
-          }));
-
-          // Check IndexedDB cache first
-          const cached = await getCachedPrice(ticker);
+          set((s) => ({ priceFetchState: { ...s.priceFetchState, [ticker]: "loading" } }));
+          const cached = getCachedPrice(ticker);
           if (cached !== null) {
-            updates[ticker] = cached;
-            fetchStates[ticker] = "idle";
-            set((s) => ({
-              stockPrices: { ...s.stockPrices, [ticker]: cached },
-              priceFetchState: { ...s.priceFetchState, [ticker]: "idle" },
-            }));
+            set((s) => ({ stockPrices: { ...s.stockPrices, [ticker]: cached }, priceFetchState: { ...s.priceFetchState, [ticker]: "idle" } }));
             return;
           }
-
-          // Fetch from Yahoo Finance via a proxy API route
           try {
             const res = await fetch(`/api/price?ticker=${encodeURIComponent(ticker)}`);
-            if (!res.ok) throw new Error("price fetch failed");
+            if (!res.ok) throw new Error();
             const { price } = (await res.json()) as { price: number };
-            await setCachedPrice(ticker, price);
-            updates[ticker] = price;
-            set((s) => ({
-              stockPrices: { ...s.stockPrices, [ticker]: price },
-              priceFetchState: { ...s.priceFetchState, [ticker]: "idle" },
-            }));
+            setCachedPrice(ticker, price);
+            set((s) => ({ stockPrices: { ...s.stockPrices, [ticker]: price }, priceFetchState: { ...s.priceFetchState, [ticker]: "idle" } }));
           } catch {
-            set((s) => ({
-              priceFetchState: { ...s.priceFetchState, [ticker]: "error" },
-            }));
+            set((s) => ({ priceFetchState: { ...s.priceFetchState, [ticker]: "error" } }));
           }
         })
       );
     },
 
-    setSelectedPeriod: (year, month) =>
-      set({ selectedYear: year, selectedMonth: month }),
+    setSelectedPeriod: (year, month) => set({ selectedYear: year, selectedMonth: month }),
 
     getMonthlyTransactions: () => {
       const { transactions, selectedYear, selectedMonth } = get();
@@ -138,67 +91,36 @@ export const useFinanceStore = create<FinanceState>()(
     getExpenseSummary: (): ExpenseSummary => {
       const monthly = get().getMonthlyTransactions();
       const byCategory = {} as Record<TransactionCategory, number>;
-
-      let totalIncome = 0;
-      let totalExpenses = 0;
-
+      let totalIncome = 0, totalExpenses = 0;
       for (const t of monthly) {
-        if (t.type === "income") {
-          totalIncome += t.amount;
-        } else {
-          totalExpenses += t.amount;
-          byCategory[t.category] = (byCategory[t.category] ?? 0) + t.amount;
-        }
+        if (t.type === "income") totalIncome += t.amount;
+        else { totalExpenses += t.amount; byCategory[t.category] = (byCategory[t.category] ?? 0) + t.amount; }
       }
-
-      return {
-        totalIncome,
-        totalExpenses,
-        netCashFlow: totalIncome - totalExpenses,
-        byCategory,
-      };
+      return { totalIncome, totalExpenses, netCashFlow: totalIncome - totalExpenses, byCategory };
     },
 
     getPortfolioSummary: (): PortfolioSummary => {
       const { stockHoldings, stockPrices } = get();
-
       const holdings: StockWithValue[] = stockHoldings.map((h) => {
         const currentPrice = stockPrices[h.ticker] ?? null;
         const costBasis = h.shares * h.averageCostPerShare;
         const currentValue = currentPrice !== null ? currentPrice * h.shares : null;
         const gainLoss = currentValue !== null ? currentValue - costBasis : null;
-        const gainLossPercent =
-          gainLoss !== null && costBasis > 0
-            ? (gainLoss / costBasis) * 100
-            : null;
-
+        const gainLossPercent = gainLoss !== null && costBasis > 0 ? (gainLoss / costBasis) * 100 : null;
         return { ...h, currentPrice, currentValue, costBasis, gainLoss, gainLossPercent };
       });
-
       const totalCostBasis = holdings.reduce((sum, h) => sum + h.costBasis, 0);
-
       const hasAllPrices = holdings.every((h) => h.currentValue !== null);
-      const totalValue = hasAllPrices
-        ? holdings.reduce((sum, h) => sum + (h.currentValue ?? 0), 0)
-        : null;
-
+      const totalValue = hasAllPrices ? holdings.reduce((sum, h) => sum + (h.currentValue ?? 0), 0) : null;
       const totalGainLoss = totalValue !== null ? totalValue - totalCostBasis : null;
-      const totalGainLossPercent =
-        totalGainLoss !== null && totalCostBasis > 0
-          ? (totalGainLoss / totalCostBasis) * 100
-          : null;
-
+      const totalGainLossPercent = totalGainLoss !== null && totalCostBasis > 0 ? (totalGainLoss / totalCostBasis) * 100 : null;
       return { totalValue, totalCostBasis, totalGainLoss, totalGainLossPercent, holdings };
     },
 
     getNetWorth: (): number | null => {
       const { transactions } = get();
       const { totalValue } = get().getPortfolioSummary();
-
-      const cashBalance = transactions.reduce((sum, t) => {
-        return t.type === "income" ? sum + t.amount : sum - t.amount;
-      }, 0);
-
+      const cashBalance = transactions.reduce((sum, t) => t.type === "income" ? sum + t.amount : sum - t.amount, 0);
       if (totalValue === null) return null;
       return cashBalance + totalValue;
     },

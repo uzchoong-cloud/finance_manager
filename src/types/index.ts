@@ -1,60 +1,47 @@
 export type TransactionType = "expense" | "income";
 
 export type TransactionCategory =
-  | "food"
-  | "transport"
-  | "housing"
-  | "utilities"
-  | "healthcare"
-  | "entertainment"
-  | "shopping"
-  | "education"
-  | "salary"
-  | "investment"
-  | "freelance"
-  | "other";
+  | "food" | "transport" | "housing" | "utilities" | "healthcare"
+  | "entertainment" | "shopping" | "education" | "salary"
+  | "investment" | "freelance" | "other";
 
 export interface Transaction {
-  id?: number;
+  id?: string;
+  userId?: string;
   type: TransactionType;
   amount: number;
   category: TransactionCategory;
   description: string;
-  date: string; // ISO date string YYYY-MM-DD
-  createdAt: number; // Unix timestamp ms
+  date: string;
+  createdAt: number;
 }
 
 export type StockTransactionType = "buy" | "sell";
 
 export interface StockHolding {
-  id?: number;
+  id?: string;
+  userId?: string;
   ticker: string;
   name: string;
   shares: number;
-  averageCostPerShare: number; // weighted average cost basis
+  averageCostPerShare: number;
   createdAt: number;
   updatedAt: number;
 }
 
 export interface StockTransaction {
-  id?: number;
-  holdingId: number;
+  id?: string;
+  userId?: string;
+  holdingId: string;
   ticker: string;
   type: StockTransactionType;
   shares: number;
   pricePerShare: number;
-  date: string; // ISO date string YYYY-MM-DD
+  date: string;
   notes?: string;
   createdAt: number;
 }
 
-export interface PriceCache {
-  ticker: string;
-  price: number;
-  fetchedAt: number; // Unix timestamp ms
-}
-
-// Derived / computed types
 export interface StockWithValue extends StockHolding {
   currentPrice: number | null;
   currentValue: number | null;
@@ -76,4 +63,13 @@ export interface ExpenseSummary {
   totalExpenses: number;
   netCashFlow: number;
   byCategory: Record<TransactionCategory, number>;
+}
+
+export type UserRole = "admin" | "user";
+
+export interface Profile {
+  id: string;
+  username: string;
+  role: UserRole;
+  createdAt: string;
 }

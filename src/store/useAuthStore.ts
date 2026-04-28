@@ -1,0 +1,81 @@
+import { create } from "zustand";
+import { supabase, toEmail, toUsername } from "@/lib/supabase";
+import type { Profile, UserRole } from "@/types";
+
+interface AuthState {
+  profile: Profile | null;
+  loading: boolean;
+  initialized: boolean;
+  login: (username: string, password: string) => Promise<void>;
+  logout: () => Promise<void>;
+  initialize: () => Promise<void>;
+}
+
+export const useAuthStore = create<AuthState>((set) => ({
+  profile: null,
+  loading: false,
+  initialized: false,
+
+  initialize: async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.user) {
+      const profile = await fetchProfile(session.user.id);
+      set({ profile, initialized: true });
+    } else {
+      set({ initialized: true });
+    }
+
+    // Keep in sync with Supabase auth state changes
+    supabase.auth.onAuthStateChange(async (_event, session) => {
+      if (session?.user) {
+        const profile = await fetchProfile(session.user.id);
+        set({ profile });
+      } else {
+        set({ profile: null });
+      }
+    });
+  },
+
+  login: async (username: string, password: string) => {
+    set({ loading: true });
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email: toEmail(username),
+        password,
+      });
+      if (error) throw new Error("Invalid username or password");
+    } finally {
+      set({ loading: false });
+    }
+  },
+
+  logout: async () => {
+    await supabase.auth.signOut();
+    set({ profile: null });
+  },
+}));
+
+async function fetchProfile(userId: string): Promise<Profile | null> {
+  const { data } = await supabase
+    .from("profiles")
+    .select("*")
+    .eq("id", userId)
+    .single();
+  if (!data) return null;
+  return {
+    id: data.id as string,
+    username: data.username as string,
+    role: data.role as UserRole,
+    createdAt: data.created_at as string,
+  };
+}
+
+export function useIsAdmin() {
+  return useAuthStore((s) => s.profile?.role === "admin");
+}
+
+export function useUsername() {
+  return useAuthStore((s) =>
+    s.profile ? s.profile.username : toUsername(s.profile ?? "")
+  );
+}
