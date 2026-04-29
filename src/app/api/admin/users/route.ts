@@ -15,7 +15,7 @@ export async function POST(req: NextRequest) {
       email: toEmail(username),
       password,
       email_confirm: true,
-      user_metadata: { username, role },
+      user_metadata: { username, role, must_change_password: true },
     });
     if (error) return NextResponse.json({ error: error.message }, { status: 400 });
 
@@ -36,6 +36,23 @@ export async function GET() {
     const { data, error } = await admin.from("profiles").select("*").order("created_at");
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
     return NextResponse.json({ users: data });
+  } catch (err) {
+    return NextResponse.json({ error: err instanceof Error ? err.message : "Failed" }, { status: 500 });
+  }
+}
+
+// PATCH /api/admin/users — reset a user's password
+export async function PATCH(req: NextRequest) {
+  try {
+    const { id, password } = (await req.json()) as { id: string; password: string };
+    if (!id || !password) return NextResponse.json({ error: "id and password required" }, { status: 400 });
+    const admin = createAdminClient();
+    const { error } = await admin.auth.admin.updateUserById(id, {
+      password,
+      user_metadata: { must_change_password: true },
+    });
+    if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+    return NextResponse.json({ status: "updated" });
   } catch (err) {
     return NextResponse.json({ error: err instanceof Error ? err.message : "Failed" }, { status: 500 });
   }

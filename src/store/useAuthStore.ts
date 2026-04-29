@@ -6,32 +6,36 @@ interface AuthState {
   profile: Profile | null;
   loading: boolean;
   initialized: boolean;
+  mustChangePassword: boolean;
   login: (username: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   initialize: () => Promise<void>;
+  changePassword: (newPassword: string) => Promise<void>;
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
   profile: null,
   loading: false,
   initialized: false,
+  mustChangePassword: false,
 
   initialize: async () => {
     const { data: { session } } = await supabase.auth.getSession();
     if (session?.user) {
       const profile = await fetchProfile(session.user.id);
-      set({ profile, initialized: true });
+      const mustChangePassword = !!session.user.user_metadata?.must_change_password;
+      set({ profile, initialized: true, mustChangePassword });
     } else {
       set({ initialized: true });
     }
 
-    // Keep in sync with Supabase auth state changes
     supabase.auth.onAuthStateChange(async (_event, session) => {
       if (session?.user) {
         const profile = await fetchProfile(session.user.id);
-        set({ profile });
+        const mustChangePassword = !!session.user.user_metadata?.must_change_password;
+        set({ profile, mustChangePassword });
       } else {
-        set({ profile: null });
+        set({ profile: null, mustChangePassword: false });
       }
     });
   },
@@ -51,7 +55,21 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   logout: async () => {
     await supabase.auth.signOut();
-    set({ profile: null });
+    set({ profile: null, mustChangePassword: false });
+  },
+
+  changePassword: async (newPassword: string) => {
+    set({ loading: true });
+    try {
+      const { error } = await supabase.auth.updateUser({
+        password: newPassword,
+        data: { must_change_password: false },
+      });
+      if (error) throw new Error(error.message);
+      set({ mustChangePassword: false });
+    } finally {
+      set({ loading: false });
+    }
   },
 }));
 
