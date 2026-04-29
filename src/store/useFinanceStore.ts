@@ -22,7 +22,7 @@ interface FinanceState {
   setSelectedPeriod: (year: number, month: number) => void;
   getPortfolioSummary: () => PortfolioSummary;
   getExpenseSummary: () => ExpenseSummary;
-  getNetWorth: () => number | null;
+  getNetWorth: (startingBalance?: number) => number | null;
   getMonthlyTransactions: () => Transaction[];
 }
 
@@ -117,12 +117,12 @@ export const useFinanceStore = create<FinanceState>()(
       return { totalValue, totalCostBasis, totalGainLoss, totalGainLossPercent, holdings };
     },
 
-    getNetWorth: (): number | null => {
+    getNetWorth: (startingBalance = 0): number | null => {
       const { transactions } = get();
       const { totalValue } = get().getPortfolioSummary();
       const cashBalance = transactions.reduce((sum, t) => t.type === "income" ? sum + t.amount : sum - t.amount, 0);
       if (totalValue === null) return null;
-      return cashBalance + totalValue;
+      return startingBalance + cashBalance + totalValue;
     },
   }))
 );

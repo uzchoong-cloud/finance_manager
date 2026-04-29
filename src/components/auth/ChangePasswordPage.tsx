@@ -2,12 +2,15 @@
 
 import { useState } from "react";
 import { useAuthStore } from "@/store/useAuthStore";
+import { useI18n } from "@/lib/i18n";
 
 export function ChangePasswordPage() {
   const changePassword = useAuthStore((s) => s.changePassword);
   const logout = useAuthStore((s) => s.logout);
   const profile = useAuthStore((s) => s.profile);
   const loading = useAuthStore((s) => s.loading);
+  const { t } = useI18n();
+  const cp = t.changePassword;
 
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
@@ -16,12 +19,12 @@ export function ChangePasswordPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    if (password.length < 8) { setError("Password must be at least 8 characters"); return; }
-    if (password !== confirm) { setError("Passwords do not match"); return; }
+    if (password.length < 8) { setError(cp.errorMinLength); return; }
+    if (password !== confirm) { setError(cp.errorMismatch); return; }
     try {
       await changePassword(password);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to update password");
+      setError(err instanceof Error ? err.message : cp.errorMinLength);
     }
   };
 
@@ -46,57 +49,41 @@ export function ChangePasswordPage() {
 
         <div className="mb-6 rounded px-3 py-2.5" style={{ background: "rgba(83,58,253,0.04)", border: "1px solid rgba(83,58,253,0.15)", borderRadius: "6px" }}>
           <p style={{ fontSize: "12px", color: "#533afd", fontFeatureSettings: '"ss01"', fontWeight: 400 }}>
-            Welcome, <strong>{profile?.username}</strong>. Please set a new password to continue.
+            {cp.welcome}, <strong>{profile?.username}</strong>. {cp.welcomeSubtitle}
           </p>
         </div>
 
         <h1 style={{ fontSize: "1.3rem", fontWeight: 300, color: "#061b31", letterSpacing: "-0.4px", fontFeatureSettings: '"ss01"', marginBottom: 4 }}>
-          Set your password
+          {cp.title}
         </h1>
         <p style={{ fontSize: "14px", color: "#64748d", fontWeight: 300, fontFeatureSettings: '"ss01"', marginBottom: 24 }}>
-          Choose a new password to secure your account
+          {cp.subtitle}
         </p>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-1">
             <label style={{ fontSize: "13px", fontWeight: 400, color: "#273951", fontFeatureSettings: '"ss01"', display: "block", marginBottom: 4 }}>
-              New password
+              {cp.newPassword}
             </label>
-            <input
-              type="password"
-              autoComplete="new-password"
-              autoFocus
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              placeholder="Min. 8 characters"
-              style={inputStyle}
+            <input type="password" autoComplete="new-password" autoFocus value={password} onChange={(e) => setPassword(e.target.value)} required
+              placeholder={cp.newPasswordPlaceholder} style={inputStyle}
               onFocus={(e) => (e.target.style.borderColor = "#533afd")}
-              onBlur={(e) => (e.target.style.borderColor = "#e5edf5")}
-            />
+              onBlur={(e) => (e.target.style.borderColor = "#e5edf5")} />
           </div>
 
           <div className="space-y-1">
             <label style={{ fontSize: "13px", fontWeight: 400, color: "#273951", fontFeatureSettings: '"ss01"', display: "block", marginBottom: 4 }}>
-              Confirm password
+              {cp.confirmPassword}
             </label>
-            <input
-              type="password"
-              autoComplete="new-password"
-              value={confirm}
-              onChange={(e) => setConfirm(e.target.value)}
-              required
-              placeholder="Re-enter password"
-              style={inputStyle}
+            <input type="password" autoComplete="new-password" value={confirm} onChange={(e) => setConfirm(e.target.value)} required
+              placeholder={cp.confirmPasswordPlaceholder} style={inputStyle}
               onFocus={(e) => (e.target.style.borderColor = "#533afd")}
-              onBlur={(e) => (e.target.style.borderColor = "#e5edf5")}
-            />
+              onBlur={(e) => (e.target.style.borderColor = "#e5edf5")} />
           </div>
 
-          {/* Strength hint */}
           {password && (
             <div style={{ fontSize: "11px", color: password.length >= 8 ? "#108c3d" : "#64748d", fontFeatureSettings: '"ss01"' }}>
-              {password.length >= 8 ? "✓ Length looks good" : `${8 - password.length} more characters needed`}
+              {password.length >= 8 ? cp.strengthOk : cp.strengthNeeded(8 - password.length)}
             </div>
           )}
 
@@ -106,26 +93,15 @@ export function ChangePasswordPage() {
             </p>
           )}
 
-          <button
-            type="submit"
-            disabled={loading}
-            style={{
-              width: "100%", padding: "9px 16px", marginTop: 8,
-              background: loading ? "#b9b9f9" : "#533afd",
-              color: "#ffffff", border: "none", borderRadius: "4px",
-              fontSize: "14px", fontWeight: 400, fontFeatureSettings: '"ss01"',
-              cursor: loading ? "not-allowed" : "pointer", transition: "background 0.15s",
-            }}
-          >
-            {loading ? "Saving…" : "Set password & continue"}
+          <button type="submit" disabled={loading}
+            style={{ width: "100%", padding: "9px 16px", marginTop: 8, background: loading ? "#b9b9f9" : "#533afd", color: "#ffffff", border: "none", borderRadius: "4px", fontSize: "14px", fontWeight: 400, fontFeatureSettings: '"ss01"', cursor: loading ? "not-allowed" : "pointer", transition: "background 0.15s" }}>
+            {loading ? t.common.saving : cp.submit}
           </button>
         </form>
 
-        <button
-          onClick={logout}
-          style={{ marginTop: 16, width: "100%", fontSize: "13px", color: "#64748d", background: "none", border: "none", cursor: "pointer", fontFeatureSettings: '"ss01"' }}
-        >
-          Sign out
+        <button onClick={logout}
+          style={{ marginTop: 16, width: "100%", fontSize: "13px", color: "#64748d", background: "none", border: "none", cursor: "pointer", fontFeatureSettings: '"ss01"' }}>
+          {t.common.signOut}
         </button>
       </div>
     </div>

@@ -72,4 +72,7 @@ export interface Profile {
   username: string;
   role: UserRole;
   createdAt: string;
+  language: "en" | "ko";
+  currency: "USD" | "KRW" | "HKD";
+  startingBalance: number;
 }

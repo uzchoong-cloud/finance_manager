@@ -11,9 +11,10 @@ interface AuthState {
   logout: () => Promise<void>;
   initialize: () => Promise<void>;
   changePassword: (newPassword: string) => Promise<void>;
+  updateSettings: (settings: Partial<Pick<Profile, "language" | "currency" | "startingBalance">>) => Promise<void>;
 }
 
-export const useAuthStore = create<AuthState>((set) => ({
+export const useAuthStore = create<AuthState>((set, get) => ({
   profile: null,
   loading: false,
   initialized: false,
@@ -71,6 +72,28 @@ export const useAuthStore = create<AuthState>((set) => ({
       set({ loading: false });
     }
   },
+
+  updateSettings: async (settings) => {
+    const { profile } = get();
+    if (!profile) return;
+    set({ loading: true });
+    try {
+      const updates: Record<string, unknown> = {};
+      if (settings.language !== undefined) updates.language = settings.language;
+      if (settings.currency !== undefined) updates.currency = settings.currency;
+      if (settings.startingBalance !== undefined) updates.starting_balance = settings.startingBalance;
+
+      const { error } = await supabase
+        .from("profiles")
+        .update(updates)
+        .eq("id", profile.id);
+      if (error) throw new Error(error.message);
+
+      set({ profile: { ...profile, ...settings } });
+    } finally {
+      set({ loading: false });
+    }
+  },
 }));
 
 async function fetchProfile(userId: string): Promise<Profile | null> {
@@ -85,6 +108,9 @@ async function fetchProfile(userId: string): Promise<Profile | null> {
     username: data.username as string,
     role: data.role as UserRole,
     createdAt: data.created_at as string,
+    language: (data.language as "en" | "ko") ?? "en",
+    currency: (data.currency as "USD" | "KRW" | "HKD") ?? "USD",
+    startingBalance: (data.starting_balance as number) ?? 0,
   };
 }
 

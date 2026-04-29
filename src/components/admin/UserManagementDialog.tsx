@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { useAuthStore } from "@/store/useAuthStore";
+import { useI18n } from "@/lib/i18n";
 
 interface UserRow {
   id: string;
@@ -19,6 +20,8 @@ type PanelMode = "list" | "add" | "reset";
 
 export function UserManagementDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (v: boolean) => void }) {
   const currentProfile = useAuthStore((s) => s.profile);
+  const { t } = useI18n();
+  const adm = t.admin;
   const [mode, setMode] = useState<PanelMode>("list");
   const [users, setUsers] = useState<UserRow[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(false);
@@ -40,7 +43,7 @@ export function UserManagementDialog({ open, onOpenChange }: { open: boolean; on
       const json = await res.json();
       if (json.users) setUsers(json.users);
     } catch {
-      toast.error("Failed to load users");
+      toast.error(t.admin.title);
     } finally {
       setLoadingUsers(false);
     }
@@ -61,8 +64,8 @@ export function UserManagementDialog({ open, onOpenChange }: { open: boolean; on
         body: JSON.stringify({ username: newUsername.trim().toLowerCase(), password: newPassword, role: newRole }),
       });
       const json = await res.json();
-      if (!res.ok) { toast.error(json.error ?? "Failed to create user"); return; }
-      toast.success(`Account "${newUsername.trim().toLowerCase()}" created — user will set their password on first login`);
+      if (!res.ok) { toast.error(json.error ?? adm.createAccount); return; }
+      toast.success(adm.createSuccess(newUsername.trim().toLowerCase()));
       setNewUsername(""); setNewPassword(""); setNewRole("user");
       setMode("list");
       await loadUsers();
@@ -82,8 +85,8 @@ export function UserManagementDialog({ open, onOpenChange }: { open: boolean; on
         body: JSON.stringify({ id: selectedUser.id, password: resetPassword }),
       });
       const json = await res.json();
-      if (!res.ok) { toast.error(json.error ?? "Failed to reset password"); return; }
-      toast.success(`Password reset for "${selectedUser.username}"`);
+      if (!res.ok) { toast.error(json.error ?? adm.resetSubmit); return; }
+      toast.success(adm.resetSuccess(selectedUser.username));
       setResetPassword(""); setSelectedUser(null); setMode("list");
     } finally {
       setSaving(false);
@@ -91,12 +94,12 @@ export function UserManagementDialog({ open, onOpenChange }: { open: boolean; on
   };
 
   const handleDelete = async (user: UserRow) => {
-    if (user.id === currentProfile?.id) { toast.error("You can't delete your own account"); return; }
-    if (!confirm(`Remove account "${user.username}"? This cannot be undone.`)) return;
+    if (user.id === currentProfile?.id) { toast.error(adm.cantDeleteSelf); return; }
+    if (!confirm(adm.deleteConfirm(user.username))) return;
     try {
       const res = await fetch(`/api/admin/users?id=${user.id}`, { method: "DELETE" });
-      if (!res.ok) { const j = await res.json(); toast.error(j.error ?? "Failed"); return; }
-      toast.success(`"${user.username}" removed`);
+      if (!res.ok) { const j = await res.json(); toast.error(j.error ?? adm.resetSubmit); return; }
+      toast.success(adm.deleteSuccess(user.username));
       await loadUsers();
     } catch {
       toast.error("Failed to delete user");
@@ -112,14 +115,14 @@ export function UserManagementDialog({ open, onOpenChange }: { open: boolean; on
         <DialogHeader>
           <div className="flex items-center justify-between">
             <DialogTitle style={{ fontSize: "1.1rem", fontWeight: 300, color: "#061b31", fontFeatureSettings: '"ss01"', letterSpacing: "-0.2px" }}>
-              {mode === "list" ? "User accounts" : mode === "add" ? "Add account" : `Reset password — ${selectedUser?.username}`}
+              {mode === "list" ? adm.title : mode === "add" ? adm.addTitle : adm.resetTitle(selectedUser?.username ?? "")}
             </DialogTitle>
             {mode !== "list" && (
               <button
                 onClick={() => { setMode("list"); setSelectedUser(null); setResetPassword(""); setNewUsername(""); setNewPassword(""); }}
                 style={{ fontSize: "12px", color: "#64748d", background: "none", border: "none", cursor: "pointer", padding: "2px 6px" }}
               >
-                ← Back
+                {t.common.back}
               </button>
             )}
           </div>
@@ -133,7 +136,7 @@ export function UserManagementDialog({ open, onOpenChange }: { open: boolean; on
                 {[...Array(3)].map((_, i) => <div key={i} className="h-12 rounded animate-pulse" style={{ background: "#f0f4f8" }} />)}
               </div>
             ) : users.length === 0 ? (
-              <p style={{ fontSize: "14px", color: "#64748d", textAlign: "center", padding: "24px 0" }}>No users yet</p>
+              <p style={{ fontSize: "14px", color: "#64748d", textAlign: "center", padding: "24px 0" }}>{adm.noUsers}</p>
             ) : (
               <div className="space-y-2">
                 {users.map((u) => (
@@ -142,14 +145,14 @@ export function UserManagementDialog({ open, onOpenChange }: { open: boolean; on
                       <div className="flex items-center gap-2">
                         <span style={{ fontSize: "14px", color: "#061b31", fontFeatureSettings: '"ss01"' }}>{u.username}</span>
                         {u.role === "admin" && (
-                          <span style={{ fontSize: "10px", color: "#533afd", background: "rgba(83,58,253,0.08)", border: "1px solid rgba(83,58,253,0.2)", borderRadius: "3px", padding: "1px 5px" }}>admin</span>
+                          <span style={{ fontSize: "10px", color: "#533afd", background: "rgba(83,58,253,0.08)", border: "1px solid rgba(83,58,253,0.2)", borderRadius: "3px", padding: "1px 5px" }}>{adm.roleAdmin}</span>
                         )}
                         {u.id === currentProfile?.id && (
-                          <span style={{ fontSize: "10px", color: "#64748d", background: "rgba(100,116,141,0.08)", border: "1px solid rgba(100,116,141,0.2)", borderRadius: "3px", padding: "1px 5px" }}>you</span>
+                          <span style={{ fontSize: "10px", color: "#64748d", background: "rgba(100,116,141,0.08)", border: "1px solid rgba(100,116,141,0.2)", borderRadius: "3px", padding: "1px 5px" }}>{adm.you}</span>
                         )}
                       </div>
                       <p style={{ fontSize: "11px", color: "#64748d", fontFeatureSettings: '"ss01"' }}>
-                        Joined {new Date(u.created_at).toLocaleDateString()}
+                        {adm.joined} {new Date(u.created_at).toLocaleDateString()}
                       </p>
                     </div>
                     <div className="flex gap-1.5">
@@ -157,7 +160,7 @@ export function UserManagementDialog({ open, onOpenChange }: { open: boolean; on
                         onClick={() => { setSelectedUser(u); setMode("reset"); }}
                         style={{ fontSize: "11px", color: "#273951", background: "rgba(39,57,81,0.06)", border: "1px solid rgba(39,57,81,0.2)", borderRadius: "4px", padding: "3px 8px", cursor: "pointer" }}
                       >
-                        Reset pw
+                        {adm.resetPw}
                       </button>
                       {u.id !== currentProfile?.id && (
                         <button
@@ -178,7 +181,7 @@ export function UserManagementDialog({ open, onOpenChange }: { open: boolean; on
               className="w-full"
               style={{ background: "#533afd", color: "#fff", borderRadius: "4px", fontFeatureSettings: '"ss01"', fontWeight: 400, fontSize: "14px", border: "none", marginTop: 4 }}
             >
-              + Add account
+              {adm.addAccount}
             </Button>
           </div>
         )}
@@ -187,7 +190,7 @@ export function UserManagementDialog({ open, onOpenChange }: { open: boolean; on
         {mode === "add" && (
           <form onSubmit={handleAdd} className="space-y-4 pt-1">
             <div className="space-y-1">
-              <Label style={labelStyle}>Username</Label>
+              <Label style={labelStyle}>{adm.usernameLabel}</Label>
               <Input
                 placeholder="e.g. john"
                 value={newUsername}
@@ -198,7 +201,7 @@ export function UserManagementDialog({ open, onOpenChange }: { open: boolean; on
               />
             </div>
             <div className="space-y-1">
-              <Label style={labelStyle}>Temporary password</Label>
+              <Label style={labelStyle}>{adm.tempPassword}</Label>
               <Input
                 type="password"
                 placeholder="Min. 8 characters"
@@ -208,11 +211,11 @@ export function UserManagementDialog({ open, onOpenChange }: { open: boolean; on
                 style={inputStyle}
               />
               <p style={{ fontSize: "11px", color: "#64748d", fontFeatureSettings: '"ss01"', marginTop: 4 }}>
-                The user will be prompted to change this on their first login.
+                {adm.tempPasswordHint}
               </p>
             </div>
             <div className="space-y-1">
-              <Label style={labelStyle}>Role</Label>
+              <Label style={labelStyle}>{adm.roleLabel}</Label>
               <div className="flex gap-2">
                 {(["user", "admin"] as const).map((r) => (
                   <button
@@ -227,13 +230,13 @@ export function UserManagementDialog({ open, onOpenChange }: { open: boolean; on
                       fontFeatureSettings: '"ss01"',
                     }}
                   >
-                    {r}
+                    {r === "admin" ? adm.roleAdmin : adm.roleUser}
                   </button>
                 ))}
               </div>
             </div>
             <Button type="submit" disabled={saving} className="w-full" style={{ background: "#533afd", color: "#fff", borderRadius: "4px", fontFeatureSettings: '"ss01"', fontWeight: 400, fontSize: "14px", border: "none" }}>
-              {saving ? "Creating…" : "Create account"}
+              {saving ? adm.creating : adm.createAccount}
             </Button>
           </form>
         )}
@@ -243,11 +246,11 @@ export function UserManagementDialog({ open, onOpenChange }: { open: boolean; on
           <form onSubmit={handleReset} className="space-y-4 pt-1">
             <div className="rounded px-3 py-2.5" style={{ background: "rgba(83,58,253,0.04)", border: "1px solid rgba(83,58,253,0.15)", borderRadius: "6px" }}>
               <p style={{ fontSize: "12px", color: "#533afd", fontFeatureSettings: '"ss01"' }}>
-                Setting a new password will require <strong>{selectedUser.username}</strong> to change it again on next login.
+                {adm.resetHint(selectedUser.username)}
               </p>
             </div>
             <div className="space-y-1">
-              <Label style={labelStyle}>New password</Label>
+              <Label style={labelStyle}>{adm.newPassword}</Label>
               <Input
                 type="password"
                 placeholder="Min. 8 characters"
@@ -259,7 +262,7 @@ export function UserManagementDialog({ open, onOpenChange }: { open: boolean; on
               />
             </div>
             <Button type="submit" disabled={saving} className="w-full" style={{ background: "#533afd", color: "#fff", borderRadius: "4px", fontFeatureSettings: '"ss01"', fontWeight: 400, fontSize: "14px", border: "none" }}>
-              {saving ? "Saving…" : "Reset password"}
+              {saving ? t.common.saving : adm.resetSubmit}
             </Button>
           </form>
         )}

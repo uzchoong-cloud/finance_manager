@@ -4,20 +4,23 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuthStore } from "@/store/useAuthStore";
+import { useI18n } from "@/lib/i18n";
 import { UserManagementDialog } from "@/components/admin/UserManagementDialog";
-
-const NAV_LINKS = [
-  { href: "/", label: "Dashboard" },
-  { href: "/expenses", label: "Expenses" },
-  { href: "/portfolio", label: "Portfolio" },
-];
 
 export function Header() {
   const pathname = usePathname();
   const profile = useAuthStore((s) => s.profile);
   const logout = useAuthStore((s) => s.logout);
   const [userMgmtOpen, setUserMgmtOpen] = useState(false);
+  const { t } = useI18n();
   const isAdmin = profile?.role === "admin";
+
+  const NAV_LINKS = [
+    { href: "/", label: t.nav.dashboard },
+    { href: "/expenses", label: t.nav.expenses },
+    { href: "/portfolio", label: t.nav.portfolio },
+    { href: "/settings", label: t.nav.settings },
+  ];
 
   return (
     <>
@@ -46,7 +49,9 @@ export function Header() {
                 <span style={{ fontSize: "12px", color: "#64748d", fontFeatureSettings: '"ss01"' }}>
                   {profile.username}
                   {isAdmin && (
-                    <span style={{ marginLeft: 4, fontSize: "10px", color: "#533afd", background: "rgba(83,58,253,0.08)", border: "1px solid rgba(83,58,253,0.2)", borderRadius: "3px", padding: "1px 5px" }}>admin</span>
+                    <span style={{ marginLeft: 4, fontSize: "10px", color: "#533afd", background: "rgba(83,58,253,0.08)", border: "1px solid rgba(83,58,253,0.2)", borderRadius: "3px", padding: "1px 5px" }}>
+                      {t.admin.roleAdmin}
+                    </span>
                   )}
                 </span>
               )}
@@ -55,14 +60,14 @@ export function Header() {
                   onClick={() => setUserMgmtOpen(true)}
                   style={{ fontSize: "12px", color: "#533afd", background: "rgba(83,58,253,0.06)", border: "1px solid rgba(83,58,253,0.2)", borderRadius: "4px", padding: "4px 10px", cursor: "pointer", fontFeatureSettings: '"ss01"' }}
                 >
-                  Manage users
+                  {t.common.manageUsers}
                 </button>
               )}
               <button
                 onClick={logout}
                 style={{ fontSize: "12px", color: "#64748d", background: "transparent", border: "1px solid #e5edf5", borderRadius: "4px", padding: "4px 10px", cursor: "pointer", fontFeatureSettings: '"ss01"' }}
               >
-                Sign out
+                {t.common.signOut}
               </button>
             </div>
           </div>
