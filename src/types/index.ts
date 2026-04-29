@@ -16,6 +16,23 @@ export interface Transaction {
   createdAt: number;
 }
 
+export type RecurringFrequency = "weekly" | "monthly";
+
+export interface RecurringTransaction {
+  id?: string;
+  userId?: string;
+  type: TransactionType;
+  amount: number;
+  category: TransactionCategory;
+  description: string;
+  frequency: RecurringFrequency;
+  startDate: string;
+  endDate: string | null;
+  nextDueDate: string;
+  dayOfMonth: number | null;
+  createdAt: number;
+}
+
 export type StockTransactionType = "buy" | "sell";
 
 export interface StockHolding {

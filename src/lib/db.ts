@@ -1,5 +1,5 @@
 import { supabase } from "./supabase";
-import type { Transaction, StockHolding, StockTransaction } from "@/types";
+import type { Transaction, StockHolding, StockTransaction, RecurringTransaction, TransactionType, TransactionCategory, RecurringFrequency } from "@/types";
 
 // ─── Transactions ─────────────────────────────────────────────
 
@@ -116,6 +116,107 @@ export async function getStockTransactions(holdingId: string): Promise<StockTran
     date: row.date as string, notes: row.notes as string | undefined,
     createdAt: new Date(row.created_at as string).getTime(),
   }));
+}
+
+// ─── Recurring Transactions ───────────────────────────────────
+
+function advanceDate(currentDue: string, frequency: RecurringFrequency, dayOfMonth: number | null): string {
+  const d = new Date(currentDue + "T00:00:00");
+  if (frequency === "weekly") {
+    d.setDate(d.getDate() + 7);
+  } else {
+    d.setMonth(d.getMonth() + 1);
+    // Clamp to original day-of-month (e.g. always the 31st → last day if needed)
+    const target = dayOfMonth ?? d.getDate();
+    const lastDay = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+    d.setDate(Math.min(target, lastDay));
+  }
+  return d.toISOString().split("T")[0];
+}
+
+function mapRecurring(row: Record<string, unknown>): RecurringTransaction {
+  return {
+    id: row.id as string,
+    userId: row.user_id as string,
+    type: row.type as TransactionType,
+    amount: Number(row.amount),
+    category: row.category as TransactionCategory,
+    description: row.description as string,
+    frequency: row.frequency as RecurringFrequency,
+    startDate: row.start_date as string,
+    endDate: row.end_date as string | null,
+    nextDueDate: row.next_due_date as string,
+    dayOfMonth: row.day_of_month != null ? Number(row.day_of_month) : null,
+    createdAt: new Date(row.created_at as string).getTime(),
+  };
+}
+
+export async function getAllRecurring(): Promise<RecurringTransaction[]> {
+  const { data, error } = await supabase
+    .from("recurring_transactions").select("*").order("created_at");
+  if (error) throw new Error(error.message);
+  return (data ?? []).map(mapRecurring);
+}
+
+export async function addRecurring(
+  data: Omit<RecurringTransaction, "id" | "userId" | "createdAt" | "nextDueDate">
+): Promise<void> {
+  const dayOfMonth = data.frequency === "monthly"
+    ? parseInt(data.startDate.split("-")[2], 10)
+    : null;
+  const { error } = await supabase.from("recurring_transactions").insert({
+    type: data.type, amount: data.amount, category: data.category,
+    description: data.description, frequency: data.frequency,
+    start_date: data.startDate, end_date: data.endDate ?? null,
+    next_due_date: data.startDate, day_of_month: dayOfMonth,
+  });
+  if (error) throw new Error(error.message);
+}
+
+export async function updateRecurring(
+  id: string,
+  data: Partial<Pick<RecurringTransaction, "amount" | "category" | "description" | "endDate" | "frequency" | "startDate">>
+): Promise<void> {
+  const updates: Record<string, unknown> = {};
+  if (data.amount !== undefined) updates.amount = data.amount;
+  if (data.category !== undefined) updates.category = data.category;
+  if (data.description !== undefined) updates.description = data.description;
+  if (data.endDate !== undefined) updates.end_date = data.endDate ?? null;
+  if (data.frequency !== undefined) updates.frequency = data.frequency;
+  if (data.startDate !== undefined) {
+    updates.start_date = data.startDate;
+    updates.day_of_month = data.frequency === "monthly" || (!data.frequency)
+      ? parseInt(data.startDate.split("-")[2], 10)
+      : null;
+  }
+  const { error } = await supabase.from("recurring_transactions").update(updates).eq("id", id);
+  if (error) throw new Error(error.message);
+}
+
+export async function deleteRecurring(id: string): Promise<void> {
+  const { error } = await supabase.from("recurring_transactions").delete().eq("id", id);
+  if (error) throw new Error(error.message);
+}
+
+export async function confirmRecurring(recurring: RecurringTransaction, dueDate: string): Promise<void> {
+  // Create the real transaction
+  await addTransaction({
+    type: recurring.type, amount: recurring.amount,
+    category: recurring.category, description: recurring.description,
+    date: dueDate,
+  });
+  // Advance next_due_date
+  const next = advanceDate(dueDate, recurring.frequency, recurring.dayOfMonth);
+  const { error } = await supabase.from("recurring_transactions")
+    .update({ next_due_date: next }).eq("id", recurring.id!);
+  if (error) throw new Error(error.message);
+}
+
+export async function skipRecurring(recurring: RecurringTransaction, dueDate: string): Promise<void> {
+  const next = advanceDate(dueDate, recurring.frequency, recurring.dayOfMonth);
+  const { error } = await supabase.from("recurring_transactions")
+    .update({ next_due_date: next }).eq("id", recurring.id!);
+  if (error) throw new Error(error.message);
 }
 
 // ─── Price cache (localStorage, 5 min TTL) ────────────────────

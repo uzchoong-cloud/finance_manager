@@ -10,6 +10,8 @@ import { CategoryBadge } from "@/components/shared/CategoryBadge";
 import { StatCard } from "@/components/shared/StatCard";
 import { ExpenseCalendar } from "./ExpenseCalendar";
 import { BudgetBar } from "./BudgetBar";
+import { PendingTransactions } from "./PendingTransactions";
+import { RecurringManager } from "./RecurringManager";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -127,9 +129,12 @@ export function ExpensesView() {
           <h1 style={{ fontSize: "1.75rem", fontWeight: 300, letterSpacing: "-0.5px", fontFeatureSettings: '"ss01"', color: "#061b31", lineHeight: 1.2 }}>{ex.title}</h1>
           <p style={{ fontSize: "14px", color: "#64748d", fontWeight: 300, marginTop: 4, fontFeatureSettings: '"ss01"' }}>{ex.subtitle}</p>
         </div>
-        <Button onClick={() => setOpen(true)} style={{ background: "#533afd", color: "#fff", borderRadius: "4px", fontFeatureSettings: '"ss01"', fontWeight: 400, fontSize: "14px", border: "none", padding: "8px 16px" }}>
-          {ex.addTransaction}
-        </Button>
+        <div className="flex gap-2">
+          <RecurringManager />
+          <Button onClick={() => setOpen(true)} style={{ background: "#533afd", color: "#fff", borderRadius: "4px", fontFeatureSettings: '"ss01"', fontWeight: 400, fontSize: "14px", border: "none", padding: "8px 16px" }}>
+            {ex.addTransaction}
+          </Button>
+        </div>
 
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogContent style={{ borderRadius: "8px", border: "1px solid #e5edf5", maxWidth: 440 }}>
@@ -196,6 +201,8 @@ export function ExpensesView() {
       </div>
 
       <BudgetBar totalExpenses={totalExpenses} />
+
+      <PendingTransactions />
 
       <div>
         <h2 style={{ fontSize: "15px", fontWeight: 400, color: "#061b31", fontFeatureSettings: '"ss01"', marginBottom: 12 }}>{listLabel}</h2>

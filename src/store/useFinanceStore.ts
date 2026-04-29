@@ -1,12 +1,14 @@
 import { create } from "zustand";
 import { subscribeWithSelector } from "zustand/middleware";
-import type { Transaction, StockHolding, StockWithValue, PortfolioSummary, ExpenseSummary, TransactionCategory } from "@/types";
-import { getAllTransactions, getAllStockHoldings, getCachedPrice, setCachedPrice } from "@/lib/db";
+import type { Transaction, StockHolding, StockWithValue, PortfolioSummary, ExpenseSummary, TransactionCategory, RecurringTransaction } from "@/types";
+import { getAllTransactions, getAllStockHoldings, getCachedPrice, setCachedPrice, getAllRecurring } from "@/lib/db";
 
 interface PriceFetchState { [ticker: string]: "idle" | "loading" | "error" }
 
 interface FinanceState {
   transactions: Transaction[];
+  recurringTransactions: RecurringTransaction[];
+  recurringLoaded: boolean;
   stockHoldings: StockHolding[];
   stockPrices: Record<string, number>;
   priceFetchState: PriceFetchState;
@@ -16,6 +18,7 @@ interface FinanceState {
   selectedYear: number;
   loadTransactions: () => Promise<void>;
   loadStockHoldings: () => Promise<void>;
+  loadRecurring: () => Promise<void>;
   loadAll: () => Promise<void>;
   setStockPrice: (ticker: string, price: number) => void;
   fetchStockPrices: () => Promise<void>;
@@ -29,6 +32,8 @@ interface FinanceState {
 export const useFinanceStore = create<FinanceState>()(
   subscribeWithSelector((set, get) => ({
     transactions: [],
+    recurringTransactions: [],
+    recurringLoaded: false,
     stockHoldings: [],
     stockPrices: {},
     priceFetchState: {},
@@ -47,9 +52,14 @@ export const useFinanceStore = create<FinanceState>()(
       set({ stockHoldings, holdingsLoaded: true });
     },
 
+    loadRecurring: async () => {
+      const recurringTransactions = await getAllRecurring();
+      set({ recurringTransactions, recurringLoaded: true });
+    },
+
     loadAll: async () => {
-      const { loadTransactions, loadStockHoldings, fetchStockPrices } = get();
-      await Promise.all([loadTransactions(), loadStockHoldings()]);
+      const { loadTransactions, loadStockHoldings, loadRecurring, fetchStockPrices } = get();
+      await Promise.all([loadTransactions(), loadStockHoldings(), loadRecurring()]);
       await fetchStockPrices();
     },
 
