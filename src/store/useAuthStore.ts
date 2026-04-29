@@ -11,7 +11,7 @@ interface AuthState {
   logout: () => Promise<void>;
   initialize: () => Promise<void>;
   changePassword: (newPassword: string) => Promise<void>;
-  updateSettings: (settings: Partial<Pick<Profile, "language" | "currency" | "startingBalance">>) => Promise<void>;
+  updateSettings: (settings: Partial<Pick<Profile, "language" | "currency" | "startingBalance" | "monthlyBudget">>) => Promise<void>;
 }
 
 export const useAuthStore = create<AuthState>((set, get) => ({
@@ -82,6 +82,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       if (settings.language !== undefined) updates.language = settings.language;
       if (settings.currency !== undefined) updates.currency = settings.currency;
       if (settings.startingBalance !== undefined) updates.starting_balance = settings.startingBalance;
+      if (settings.monthlyBudget !== undefined) updates.monthly_budget = settings.monthlyBudget;
 
       const { error } = await supabase
         .from("profiles")
@@ -111,6 +112,7 @@ async function fetchProfile(userId: string): Promise<Profile | null> {
     language: (data.language as "en" | "ko") ?? "en",
     currency: (data.currency as "USD" | "KRW" | "HKD") ?? "USD",
     startingBalance: (data.starting_balance as number) ?? 0,
+    monthlyBudget: data.monthly_budget != null ? (data.monthly_budget as number) : null,
   };
 }
 

@@ -75,4 +75,5 @@ export interface Profile {
   language: "en" | "ko";
   currency: "USD" | "KRW" | "HKD";
   startingBalance: number;
+  monthlyBudget: number | null;
 }

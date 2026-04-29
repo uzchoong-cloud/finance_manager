@@ -4,10 +4,12 @@ import { useState, useMemo } from "react";
 import { toast } from "sonner";
 import { addTransaction, deleteTransaction } from "@/lib/db";
 import { useFinanceStore } from "@/store/useFinanceStore";
+import { useAuthStore } from "@/store/useAuthStore";
 import { useI18n } from "@/lib/i18n";
 import { CategoryBadge } from "@/components/shared/CategoryBadge";
 import { StatCard } from "@/components/shared/StatCard";
 import { ExpenseCalendar } from "./ExpenseCalendar";
+import { BudgetBar } from "./BudgetBar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -31,6 +33,7 @@ export function ExpensesView() {
   const [saving, setSaving] = useState(false);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
 
+  const profile = useAuthStore((s) => s.profile);
   const loadTransactions = useFinanceStore((s) => s.loadTransactions);
   const selectedMonth = useFinanceStore((s) => s.selectedMonth);
   const selectedYear = useFinanceStore((s) => s.selectedYear);
@@ -73,6 +76,15 @@ export function ExpensesView() {
       await addTransaction({ type, amount: parsedAmount, category, description, date });
       await loadTransactions();
       toast.success(ex.addSuccess(type === "income" ? ex.income : ex.expense));
+      // Warn if this expense tips user over budget (only for current month)
+      const budget = profile?.monthlyBudget;
+      const isCurrentMonth = date.startsWith(`${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, "0")}`);
+      if (type === "expense" && budget !== null && budget !== undefined && isCurrentMonth) {
+        const newTotal = totalExpenses + parsedAmount;
+        if (newTotal > budget && totalExpenses <= budget) {
+          toast.error(t.budget.warningOver(formatCurrency(newTotal - budget, currency)), { duration: 5000 });
+        }
+      }
       setOpen(false);
       setAmount(""); setDescription(""); setDate(todayISO());
     } catch { toast.error(ex.saveError); }
@@ -182,6 +194,8 @@ export function ExpensesView() {
         <StatCard label={ex.totalExpenses} value={formatCurrencyCompact(totalExpenses, currency)} trend="down" />
         <StatCard label={ex.netCashFlow} value={formatCurrencyCompact(netCashFlow, currency)} trend={netCashFlow >= 0 ? "up" : "down"} />
       </div>
+
+      <BudgetBar totalExpenses={totalExpenses} />
 
       <div>
         <h2 style={{ fontSize: "15px", fontWeight: 400, color: "#061b31", fontFeatureSettings: '"ss01"', marginBottom: 12 }}>{listLabel}</h2>

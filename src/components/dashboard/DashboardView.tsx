@@ -6,6 +6,36 @@ import { useI18n } from "@/lib/i18n";
 import { StatCard } from "@/components/shared/StatCard";
 import { CategoryBadge } from "@/components/shared/CategoryBadge";
 import { formatCurrency, formatCurrencyCompact, formatPercent, formatDate } from "@/lib/format";
+import type { Currency } from "@/lib/i18n";
+
+function BudgetDashCard({ spent, budget, pct, over, near, label, currency, formatCurrency: fc, formatCurrencyCompact: fcc, remaining, overLabel }: {
+  spent: number; budget: number; pct: number; over: boolean; near: boolean;
+  label: string; currency: Currency;
+  formatCurrency: (n: number, c: Currency) => string;
+  formatCurrencyCompact: (n: number, c: Currency) => string;
+  remaining: string; overLabel: string;
+}) {
+  const barColor = over ? "#ea2261" : near ? "#f59e0b" : "#533afd";
+  const clamp = Math.min(pct, 100);
+  const valueColor = over ? "#ea2261" : near ? "#f59e0b" : "#061b31";
+  return (
+    <div style={{ background: "#ffffff", border: "1px solid #e5edf5", borderRadius: "6px", boxShadow: "rgba(23,23,23,0.08) 0px 15px 35px 0px", padding: "20px" }}>
+      <p className="text-[12px] uppercase tracking-wider mb-2" style={{ fontFeatureSettings: '"ss01"', fontWeight: 400, color: "#64748d", letterSpacing: "0.06em" }}>{label}</p>
+      <p className="text-[28px] leading-none mb-1" style={{ fontFeatureSettings: '"tnum"', fontVariantNumeric: "tabular-nums", fontWeight: 300, color: valueColor, letterSpacing: "-0.5px" }}>
+        {fcc(spent, currency)}
+      </p>
+      <p className="text-[13px] mt-1 mb-3" style={{ fontFeatureSettings: '"tnum"', fontWeight: 400, color: over ? "#ea2261" : "#64748d" }}>
+        {over
+          ? `${fc(spent - budget, currency)} ${overLabel}`
+          : `${fc(Math.max(budget - spent, 0), currency)} ${remaining}`}
+      </p>
+      <div style={{ height: "4px", background: "rgba(0,0,0,0.06)", borderRadius: "999px", overflow: "hidden" }}>
+        <div style={{ height: "100%", width: `${clamp}%`, background: barColor, borderRadius: "999px", transition: "width 0.4s ease" }} />
+      </div>
+      <p style={{ fontSize: "11px", color: "#64748d", marginTop: 4, fontFeatureSettings: '"tnum"' }}>{Math.round(pct)}% of {fcc(budget, currency)}</p>
+    </div>
+  );
+}
 
 export function DashboardView() {
   const transactions = useFinanceStore((s) => s.transactions);
@@ -20,9 +50,15 @@ export function DashboardView() {
   const locale = lang === "ko" ? "ko-KR" : "en-US";
 
   const startingBalance = profile?.startingBalance ?? 0;
+  const monthlyBudget = profile?.monthlyBudget ?? null;
   const netWorth = getNetWorth(startingBalance);
   const { totalIncome, totalExpenses, netCashFlow } = getExpenseSummary();
   const { totalValue, totalGainLossPercent } = getPortfolioSummary();
+
+  // Budget derived values for dashboard card
+  const budgetPct = monthlyBudget !== null && monthlyBudget > 0 ? (totalExpenses / monthlyBudget) * 100 : null;
+  const budgetOver = budgetPct !== null && budgetPct >= 100;
+  const budgetNear = budgetPct !== null && budgetPct >= 75 && !budgetOver;
 
   const recentTransactions = transactions.slice(0, 5);
   const isLoaded = transactionsLoaded && holdingsLoaded;
@@ -38,7 +74,7 @@ export function DashboardView() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <div className={`grid grid-cols-1 gap-4 ${monthlyBudget !== null ? "sm:grid-cols-2 lg:grid-cols-4" : "sm:grid-cols-3"}`}>
         <StatCard
           label={d.netWorth}
           value={!isLoaded ? "—" : netWorth === null ? d.pendingPrices : formatCurrencyCompact(netWorth, currency)}
@@ -61,6 +97,21 @@ export function DashboardView() {
           subValue={totalGainLossPercent !== null ? `${formatPercent(totalGainLossPercent)} ${d.totalReturn}` : undefined}
           trend={totalGainLossPercent === null ? "neutral" : totalGainLossPercent >= 0 ? "up" : "down"}
         />
+        {monthlyBudget !== null && (
+          <BudgetDashCard
+            spent={totalExpenses}
+            budget={monthlyBudget}
+            pct={budgetPct!}
+            over={budgetOver}
+            near={budgetNear}
+            label={t.budget.dashboardLabel}
+            currency={currency}
+            formatCurrency={formatCurrency}
+            formatCurrencyCompact={formatCurrencyCompact}
+            remaining={t.budget.remaining}
+            overLabel={t.budget.over}
+          />
+        )}
       </div>
 
       <div>
