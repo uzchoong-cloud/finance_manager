@@ -70,10 +70,10 @@ export function ExpenseCalendar({
   return (
     <div
       style={{
-        background: "#ffffff",
+        background: "var(--wt-surface)",
         border: "1px solid #e5edf5",
         borderRadius: "8px",
-        boxShadow: "rgba(23,23,23,0.08) 0px 15px 35px 0px",
+        boxShadow: "var(--wt-shadow)",
         overflow: "hidden",
       }}
     >
@@ -89,7 +89,7 @@ export function ExpenseCalendar({
             border: "1px solid #e5edf5",
             borderRadius: "4px",
             padding: "4px 10px",
-            color: "#273951",
+            color: "var(--wt-text-2)",
             fontSize: "14px",
             cursor: "pointer",
             lineHeight: 1,
@@ -101,7 +101,7 @@ export function ExpenseCalendar({
           style={{
             fontSize: "14px",
             fontWeight: 400,
-            color: "#061b31",
+            color: "var(--wt-text)",
             fontFeatureSettings: '"ss01"',
             letterSpacing: "-0.1px",
           }}
@@ -116,7 +116,7 @@ export function ExpenseCalendar({
             border: "1px solid #e5edf5",
             borderRadius: "4px",
             padding: "4px 10px",
-            color: isNextMonthDisabled ? "#e5edf5" : "#273951",
+            color: isNextMonthDisabled ? "var(--wt-border)" : "var(--wt-text-2)",
             fontSize: "14px",
             cursor: isNextMonthDisabled ? "default" : "pointer",
             lineHeight: 1,
@@ -135,7 +135,7 @@ export function ExpenseCalendar({
             style={{
               fontSize: "10px",
               fontWeight: 400,
-              color: "#64748d",
+              color: "var(--wt-muted)",
               fontFeatureSettings: '"ss01"',
               letterSpacing: "0.05em",
               textTransform: "uppercase",
@@ -183,10 +183,10 @@ export function ExpenseCalendar({
                   fontWeight: isToday && !isSelected ? 400 : 300,
                   fontFeatureSettings: '"tnum"',
                   color: isSelected
-                    ? "#ffffff"
+                    ? "var(--wt-surface)"
                     : isToday
                     ? "#533afd"
-                    : "#061b31",
+                    : "var(--wt-text)",
                   lineHeight: 1,
                 }}
               >
@@ -245,7 +245,7 @@ export function ExpenseCalendar({
             onClick={() => onSelectDate(null)}
             style={{
               fontSize: "11px",
-              color: "#64748d",
+              color: "var(--wt-muted)",
               background: "none",
               border: "none",
               cursor: "pointer",

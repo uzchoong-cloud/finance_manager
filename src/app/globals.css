@@ -159,6 +159,51 @@
   --sidebar-accent-foreground: #273951;
   --sidebar-border: #e5edf5;
   --sidebar-ring: #533afd;
+
+  /* ── App semantic tokens ── */
+  --wt-text:           #061b31;
+  --wt-text-2:         #273951;
+  --wt-muted:          #64748d;
+  --wt-bg:             #f4f6f9;
+  --wt-surface:        #ffffff;
+  --wt-surface-2:      #f8fafc;
+  --wt-surface-3:      #f0f4f8;
+  --wt-surface-hover:  #fafbfc;
+  --wt-border:         #e5edf5;
+  --wt-shadow:         rgba(23,23,23,0.08) 0px 15px 35px 0px;
+  --wt-shadow-sm:      rgba(23,23,23,0.06) 0px 3px 6px;
+  --wt-shadow-nav:     rgba(50,50,93,0.10) 0px -4px 12px;
+}
+
+.dark {
+  --background: #0b1526;
+  --foreground: #dce6f0;
+  --card: #132039;
+  --card-foreground: #dce6f0;
+  --popover: #132039;
+  --popover-foreground: #dce6f0;
+  --secondary: #172945;
+  --secondary-foreground: #8ba3be;
+  --muted: #172945;
+  --muted-foreground: #607080;
+  --accent: #172945;
+  --accent-foreground: #8ba3be;
+  --border: #223451;
+  --input: #223451;
+
+  /* ── App semantic tokens (dark) ── */
+  --wt-text:           #dce6f0;
+  --wt-text-2:         #8ba3be;
+  --wt-muted:          #607080;
+  --wt-bg:             #0b1526;
+  --wt-surface:        #132039;
+  --wt-surface-2:      #0e1d32;
+  --wt-surface-3:      #172945;
+  --wt-surface-hover:  #1a2e47;
+  --wt-border:         #223451;
+  --wt-shadow:         rgba(0,0,0,0.35) 0px 15px 35px 0px;
+  --wt-shadow-sm:      rgba(0,0,0,0.20) 0px 3px 6px;
+  --wt-shadow-nav:     rgba(0,0,0,0.30) 0px -4px 12px;
 }
 
 /* ─── Base Layer ───────────────────────────────────────────────── */

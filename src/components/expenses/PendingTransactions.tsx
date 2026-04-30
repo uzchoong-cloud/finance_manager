@@ -82,7 +82,7 @@ export function PendingTransactions() {
             {pending.length}
           </span>
         </div>
-        <span style={{ fontSize: "12px", color: "#64748d", fontFeatureSettings: '"ss01"' }}>
+        <span style={{ fontSize: "12px", color: "var(--wt-muted)", fontFeatureSettings: '"ss01"' }}>
           {r.pendingSubtitle(pending.length)}
         </span>
       </div>
@@ -100,17 +100,17 @@ export function PendingTransactions() {
             <div className="flex items-center gap-3 min-w-0">
               <CategoryBadge category={rule.category} />
               <div className="min-w-0">
-                <p className="truncate" style={{ fontSize: "14px", fontWeight: 300, color: "#061b31", fontFeatureSettings: '"ss01"' }}>
+                <p className="truncate" style={{ fontSize: "14px", fontWeight: 300, color: "var(--wt-text)", fontFeatureSettings: '"ss01"' }}>
                   {rule.description}
                 </p>
-                <p style={{ fontSize: "11px", color: "#64748d", fontFeatureSettings: '"ss01"' }}>
+                <p style={{ fontSize: "11px", color: "var(--wt-muted)", fontFeatureSettings: '"ss01"' }}>
                   {r.due} {formatDate(dueDate, locale)} · {rule.frequency === "weekly" ? r.weekly : r.monthly}
                 </p>
               </div>
             </div>
 
             <div className="flex items-center gap-2 ml-3 shrink-0">
-              <span style={{ fontSize: "14px", fontWeight: 400, fontFeatureSettings: '"tnum"', color: rule.type === "income" ? "#108c3d" : "#061b31" }}>
+              <span style={{ fontSize: "14px", fontWeight: 400, fontFeatureSettings: '"tnum"', color: rule.type === "income" ? "#108c3d" : "var(--wt-text)" }}>
                 {rule.type === "income" ? "+" : "-"}{formatCurrency(rule.amount, currency)}
               </span>
               <button
@@ -123,7 +123,7 @@ export function PendingTransactions() {
               <button
                 onClick={() => handleSkip(rule, dueDate)}
                 disabled={!!isProcessing}
-                style={{ fontSize: "12px", color: "#64748d", background: "rgba(100,116,141,0.08)", border: "1px solid rgba(100,116,141,0.2)", borderRadius: "4px", padding: "4px 10px", cursor: isProcessing ? "not-allowed" : "pointer", opacity: isProcessing ? 0.6 : 1, fontFeatureSettings: '"ss01"' }}
+                style={{ fontSize: "12px", color: "var(--wt-muted)", background: "rgba(100,116,141,0.08)", border: "1px solid rgba(100,116,141,0.2)", borderRadius: "4px", padding: "4px 10px", cursor: isProcessing ? "not-allowed" : "pointer", opacity: isProcessing ? 0.6 : 1, fontFeatureSettings: '"ss01"' }}
               >
                 {r.skip}
               </button>

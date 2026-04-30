@@ -7,6 +7,7 @@ import { LoginPage } from "@/components/auth/LoginPage";
 import { ChangePasswordPage } from "@/components/auth/ChangePasswordPage";
 import { useFinanceStore } from "@/store/useFinanceStore";
 import { useAuthStore } from "@/store/useAuthStore";
+import { useThemeStore } from "@/store/useThemeStore";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const initialize = useAuthStore((s) => s.initialize);
@@ -14,10 +15,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const profile = useAuthStore((s) => s.profile);
   const loadAll = useFinanceStore((s) => s.loadAll);
   const mustChangePassword = useAuthStore((s) => s.mustChangePassword);
+  const initTheme = useThemeStore((s) => s.init);
 
   useEffect(() => {
+    initTheme();
     initialize();
-  }, [initialize]);
+  }, [initTheme, initialize]);
 
   useEffect(() => {
     if (profile) loadAll();
@@ -37,7 +40,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   if (mustChangePassword) return <ChangePasswordPage />;
 
   return (
-    <div className="flex min-h-screen flex-col bg-white">
+    <div className="flex min-h-screen flex-col" style={{ background: "var(--wt-bg)" }}>
       <Header />
       <main className="flex-1 pb-nav sm:pb-0">
         <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-8">

@@ -106,25 +106,26 @@ export function UserManagementDialog({ open, onOpenChange }: { open: boolean; on
     }
   };
 
-  const labelStyle: React.CSSProperties = { fontSize: "13px", color: "#273951", fontFeatureSettings: '"ss01"' };
-  const inputStyle = { borderRadius: "4px", border: "1px solid #e5edf5", fontSize: "14px", fontFeatureSettings: '"ss01"' };
+  const labelStyle: React.CSSProperties = { fontSize: "13px", color: "var(--wt-text-2)", fontFeatureSettings: '"ss01"' };
+  const inputStyle = { borderRadius: "4px", border: "1px solid var(--wt-border)", fontSize: "14px", fontFeatureSettings: '"ss01"' };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent style={{ borderRadius: "8px", border: "1px solid #e5edf5", maxWidth: 480 }}>
+      <DialogContent style={{ borderRadius: "8px", border: "1px solid var(--wt-border)", maxWidth: 480 }}>
         <DialogHeader>
-          <div className="flex items-center justify-between">
-            <DialogTitle style={{ fontSize: "1.1rem", fontWeight: 300, color: "#061b31", fontFeatureSettings: '"ss01"', letterSpacing: "-0.2px" }}>
-              {mode === "list" ? adm.title : mode === "add" ? adm.addTitle : adm.resetTitle(selectedUser?.username ?? "")}
-            </DialogTitle>
+          <div className="relative flex items-center justify-center">
             {mode !== "list" && (
               <button
                 onClick={() => { setMode("list"); setSelectedUser(null); setResetPassword(""); setNewUsername(""); setNewPassword(""); }}
-                style={{ fontSize: "12px", color: "#64748d", background: "none", border: "none", cursor: "pointer", padding: "2px 6px" }}
+                className="absolute left-0"
+                style={{ fontSize: "12px", color: "var(--wt-muted)", background: "none", border: "none", cursor: "pointer", padding: "2px 4px" }}
               >
                 {t.common.back}
               </button>
             )}
+            <DialogTitle style={{ fontSize: "1.1rem", fontWeight: 300, color: "var(--wt-text)", fontFeatureSettings: '"ss01"', letterSpacing: "-0.2px" }}>
+              {mode === "list" ? adm.title : mode === "add" ? adm.addTitle : adm.resetTitle(selectedUser?.username ?? "")}
+            </DialogTitle>
           </div>
         </DialogHeader>
 
@@ -133,32 +134,32 @@ export function UserManagementDialog({ open, onOpenChange }: { open: boolean; on
           <div className="space-y-3 pt-1">
             {loadingUsers ? (
               <div className="space-y-2">
-                {[...Array(3)].map((_, i) => <div key={i} className="h-12 rounded animate-pulse" style={{ background: "#f0f4f8" }} />)}
+                {[...Array(3)].map((_, i) => <div key={i} className="h-12 rounded animate-pulse" style={{ background: "var(--wt-surface-3)" }} />)}
               </div>
             ) : users.length === 0 ? (
-              <p style={{ fontSize: "14px", color: "#64748d", textAlign: "center", padding: "24px 0" }}>{adm.noUsers}</p>
+              <p style={{ fontSize: "14px", color: "var(--wt-muted)", textAlign: "center", padding: "24px 0" }}>{adm.noUsers}</p>
             ) : (
               <div className="space-y-2">
                 {users.map((u) => (
-                  <div key={u.id} className="flex items-center justify-between rounded px-3 py-2.5" style={{ background: "#f8fafc", border: "1px solid #e5edf5", borderRadius: "6px" }}>
+                  <div key={u.id} className="flex items-center justify-between rounded px-3 py-2.5" style={{ background: "var(--wt-surface-2)", border: "1px solid var(--wt-border)", borderRadius: "6px" }}>
                     <div>
                       <div className="flex items-center gap-2">
-                        <span style={{ fontSize: "14px", color: "#061b31", fontFeatureSettings: '"ss01"' }}>{u.username}</span>
+                        <span style={{ fontSize: "14px", color: "var(--wt-text)", fontFeatureSettings: '"ss01"' }}>{u.username}</span>
                         {u.role === "admin" && (
                           <span style={{ fontSize: "10px", color: "#533afd", background: "rgba(83,58,253,0.08)", border: "1px solid rgba(83,58,253,0.2)", borderRadius: "3px", padding: "1px 5px" }}>{adm.roleAdmin}</span>
                         )}
                         {u.id === currentProfile?.id && (
-                          <span style={{ fontSize: "10px", color: "#64748d", background: "rgba(100,116,141,0.08)", border: "1px solid rgba(100,116,141,0.2)", borderRadius: "3px", padding: "1px 5px" }}>{adm.you}</span>
+                          <span style={{ fontSize: "10px", color: "var(--wt-muted)", background: "rgba(100,116,141,0.08)", border: "1px solid rgba(100,116,141,0.2)", borderRadius: "3px", padding: "1px 5px" }}>{adm.you}</span>
                         )}
                       </div>
-                      <p style={{ fontSize: "11px", color: "#64748d", fontFeatureSettings: '"ss01"' }}>
+                      <p style={{ fontSize: "11px", color: "var(--wt-muted)", fontFeatureSettings: '"ss01"' }}>
                         {adm.joined} {new Date(u.created_at).toLocaleDateString()}
                       </p>
                     </div>
                     <div className="flex gap-1.5">
                       <button
                         onClick={() => { setSelectedUser(u); setMode("reset"); }}
-                        style={{ fontSize: "11px", color: "#273951", background: "rgba(39,57,81,0.06)", border: "1px solid rgba(39,57,81,0.2)", borderRadius: "4px", padding: "3px 8px", cursor: "pointer" }}
+                        style={{ fontSize: "11px", color: "var(--wt-text-2)", background: "rgba(39,57,81,0.06)", border: "1px solid rgba(39,57,81,0.2)", borderRadius: "4px", padding: "3px 8px", cursor: "pointer" }}
                       >
                         {adm.resetPw}
                       </button>
@@ -210,7 +211,7 @@ export function UserManagementDialog({ open, onOpenChange }: { open: boolean; on
                 required
                 style={inputStyle}
               />
-              <p style={{ fontSize: "11px", color: "#64748d", fontFeatureSettings: '"ss01"', marginTop: 4 }}>
+              <p style={{ fontSize: "11px", color: "var(--wt-muted)", fontFeatureSettings: '"ss01"', marginTop: 4 }}>
                 {adm.tempPasswordHint}
               </p>
             </div>
@@ -224,9 +225,9 @@ export function UserManagementDialog({ open, onOpenChange }: { open: boolean; on
                     onClick={() => setNewRole(r)}
                     style={{
                       flex: 1, padding: "7px 0", fontSize: "13px", borderRadius: "4px", cursor: "pointer",
-                      border: newRole === r ? "1px solid #533afd" : "1px solid #e5edf5",
+                      border: newRole === r ? "1px solid #533afd" : "1px solid var(--wt-border)",
                       background: newRole === r ? "rgba(83,58,253,0.06)" : "#fff",
-                      color: newRole === r ? "#533afd" : "#273951",
+                      color: newRole === r ? "#533afd" : "var(--wt-text-2)",
                       fontFeatureSettings: '"ss01"',
                     }}
                   >

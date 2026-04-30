@@ -12,6 +12,7 @@ export interface Transaction {
   amount: number;
   category: TransactionCategory;
   description: string;
+  notes?: string;
   date: string;
   createdAt: number;
 }

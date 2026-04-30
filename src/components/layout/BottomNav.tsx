@@ -52,17 +52,16 @@ export function BottomNav() {
     { href: "/", label: nav.dashboard, Icon: IconGrid },
     { href: "/expenses", label: nav.expenses, Icon: IconReceipt },
     { href: "/portfolio", label: nav.portfolio, Icon: IconTrendingUp },
-    { href: "/settings", label: nav.settings, Icon: IconSettings },
   ];
 
   return (
     <nav
       className="fixed bottom-0 left-0 right-0 z-50 sm:hidden bottom-nav"
       style={{
-        background: "rgba(255,255,255,0.95)",
+        background: "color-mix(in srgb, var(--wt-surface) 95%, transparent)",
         backdropFilter: "blur(12px)",
-        borderTop: "1px solid #e5edf5",
-        boxShadow: "rgba(50,50,93,0.1) 0px -4px 12px",
+        borderTop: "1px solid var(--wt-border)",
+        boxShadow: "var(--wt-shadow-nav)",
       }}
     >
       <div className="flex items-stretch justify-around">

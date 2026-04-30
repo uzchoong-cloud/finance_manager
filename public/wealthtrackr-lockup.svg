@@ -1,0 +1,11 @@
+<svg width="220" height="44" viewBox="0 0 220 44" fill="none" xmlns="http://www.w3.org/2000/svg">
+  
+
+  
+  <rect width="44" height="44" rx="10" fill="#533afd"></rect>
+  <polyline points="6,32 10,20 14,26 18,14 22,22 28,10 38,6" fill="none" stroke="white" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"></polyline>
+  <circle cx="38" cy="6" r="2.2" fill="white"></circle>
+
+  
+  <text x="58" y="28" font-family="&#39;DM Sans&#39;, &#39;Helvetica Neue&#39;, Helvetica, Arial, sans-serif" font-weight="300" font-size="22" letter-spacing="-0.5" fill="#533afd">Wealthtrackr</text>
+</svg>

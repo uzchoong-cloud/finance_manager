@@ -20,16 +20,17 @@ const sourceCodePro = Source_Code_Pro({
 });
 
 export const metadata: Metadata = {
-  title: "Finance Manager",
-  description: "Privacy-first personal finance manager — track expenses and stock portfolio locally.",
+  title: "Wealthtrackr",
+  description: "Track your wealth — expenses, budgets, and stock portfolio in one place.",
   manifest: "/manifest.json",
+  icons: { icon: "/wealthtrackr-icon.svg" },
 };
 
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
-  themeColor: "#ffffff",
+  themeColor: "#533afd",
 };
 
 export default function RootLayout({

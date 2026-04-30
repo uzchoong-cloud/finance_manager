@@ -109,23 +109,23 @@ export function RecurringManager() {
     }
   };
 
-  const labelStyle: React.CSSProperties = { fontFeatureSettings: '"ss01"', color: "#273951", fontSize: "13px" };
-  const inputStyle = { borderRadius: "4px", border: "1px solid #e5edf5", fontSize: "14px", fontFeatureSettings: '"ss01"' };
+  const labelStyle: React.CSSProperties = { fontFeatureSettings: '"ss01"', color: "var(--wt-text-2)", fontSize: "13px" };
+  const inputStyle = { borderRadius: "4px", border: "1px solid var(--wt-border)", fontSize: "14px", fontFeatureSettings: '"ss01"' };
 
   return (
     <>
       <Button
         onClick={openAdd}
         variant="outline"
-        style={{ borderRadius: "4px", fontSize: "13px", fontFeatureSettings: '"ss01"', border: "1px solid #e5edf5", color: "#273951" }}
+        style={{ borderRadius: "4px", fontSize: "13px", fontFeatureSettings: '"ss01"', border: "1px solid var(--wt-border)", color: "var(--wt-text-2)" }}
       >
         ↻ {r.title}
       </Button>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent style={{ borderRadius: "8px", border: "1px solid #e5edf5", maxWidth: 480 }}>
+        <DialogContent style={{ borderRadius: "8px", border: "1px solid var(--wt-border)", maxWidth: 480 }}>
           <DialogHeader>
-            <DialogTitle style={{ fontSize: "1.1rem", fontWeight: 300, color: "#061b31", fontFeatureSettings: '"ss01"', letterSpacing: "-0.2px" }}>
+            <DialogTitle style={{ fontSize: "1.1rem", fontWeight: 300, color: "var(--wt-text)", fontFeatureSettings: '"ss01"', letterSpacing: "-0.2px" }}>
               {editing ? r.editTitle : r.addTitle}
             </DialogTitle>
           </DialogHeader>
@@ -133,20 +133,20 @@ export function RecurringManager() {
           {/* List of existing rules (shown only when adding) */}
           {!editing && recurringTransactions.length > 0 && (
             <div className="space-y-1.5 pb-2" style={{ borderBottom: "1px solid #f0f4f8" }}>
-              <p style={{ fontSize: "11px", color: "#64748d", textTransform: "uppercase", letterSpacing: "0.06em", fontFeatureSettings: '"ss01"', marginBottom: 6 }}>{r.manageTitle}</p>
+              <p style={{ fontSize: "11px", color: "var(--wt-muted)", textTransform: "uppercase", letterSpacing: "0.06em", fontFeatureSettings: '"ss01"', marginBottom: 6 }}>{r.manageTitle}</p>
               {recurringTransactions.map((rule) => (
-                <div key={rule.id} className="flex items-center justify-between rounded px-3 py-2" style={{ background: "#f8fafc", border: "1px solid #e5edf5", borderRadius: "5px" }}>
+                <div key={rule.id} className="flex items-center justify-between rounded px-3 py-2" style={{ background: "var(--wt-surface-2)", border: "1px solid var(--wt-border)", borderRadius: "5px" }}>
                   <div className="flex items-center gap-2 min-w-0">
                     <CategoryBadge category={rule.category} />
                     <div className="min-w-0">
-                      <p className="truncate" style={{ fontSize: "13px", color: "#061b31", fontFeatureSettings: '"ss01"' }}>{rule.description}</p>
-                      <p style={{ fontSize: "11px", color: "#64748d", fontFeatureSettings: '"ss01"' }}>
+                      <p className="truncate" style={{ fontSize: "13px", color: "var(--wt-text)", fontFeatureSettings: '"ss01"' }}>{rule.description}</p>
+                      <p style={{ fontSize: "11px", color: "var(--wt-muted)", fontFeatureSettings: '"ss01"' }}>
                         {rule.frequency === "weekly" ? r.weekly : r.monthly} · {formatCurrency(rule.amount, currency)}
                       </p>
                     </div>
                   </div>
                   <div className="flex gap-1.5 ml-2 shrink-0">
-                    <button onClick={() => openEdit(rule)} style={{ fontSize: "11px", color: "#273951", background: "rgba(39,57,81,0.06)", border: "1px solid rgba(39,57,81,0.2)", borderRadius: "4px", padding: "3px 8px", cursor: "pointer" }}>
+                    <button onClick={() => openEdit(rule)} style={{ fontSize: "11px", color: "var(--wt-text-2)", background: "rgba(39,57,81,0.06)", border: "1px solid rgba(39,57,81,0.2)", borderRadius: "4px", padding: "3px 8px", cursor: "pointer" }}>
                       {t.common.edit}
                     </button>
                     <button onClick={() => handleDelete(rule)} style={{ fontSize: "11px", color: "#ea2261", background: "rgba(234,34,97,0.06)", border: "1px solid rgba(234,34,97,0.2)", borderRadius: "4px", padding: "3px 8px", cursor: "pointer" }}>
@@ -161,10 +161,10 @@ export function RecurringManager() {
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-4 pt-1">
             {!editing && (
-              <div className="flex rounded overflow-hidden" style={{ border: "1px solid #e5edf5" }}>
+              <div className="flex rounded overflow-hidden" style={{ border: "1px solid var(--wt-border)" }}>
                 {(["expense", "income"] as TransactionType[]).map((tp) => (
                   <button key={tp} type="button" onClick={() => handleTypeChange(tp)} className="flex-1 py-2 text-[13px] transition-colors"
-                    style={{ fontFeatureSettings: '"ss01"', background: form.type === tp ? "#533afd" : "transparent", color: form.type === tp ? "#fff" : "#273951", border: "none", cursor: "pointer" }}>
+                    style={{ fontFeatureSettings: '"ss01"', background: form.type === tp ? "#533afd" : "transparent", color: form.type === tp ? "#fff" : "var(--wt-text-2)", border: "none", cursor: "pointer" }}>
                     {tp === "income" ? ex.income : ex.expense}
                   </button>
                 ))}
@@ -181,8 +181,8 @@ export function RecurringManager() {
               <div className="space-y-1">
                 <Label style={labelStyle}>{ex.amountLabel}</Label>
                 <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[13px]" style={{ color: "#64748d" }}>{symbol}</span>
-                  <Input type="number" min="0.01" step={currency === "KRW" ? "1" : "0.01"} placeholder={currency === "KRW" ? "0" : "0.00"}
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[13px]" style={{ color: "var(--wt-muted)" }}>{symbol}</span>
+                  <Input type="number" min={currency === "KRW" ? "1" : "0.01"} step={currency === "KRW" ? "1" : "0.01"} placeholder={currency === "KRW" ? "0" : "0.00"}
                     value={form.amount} onChange={(e) => set({ amount: e.target.value })} required
                     style={{ paddingLeft: currency === "HKD" ? "44px" : "28px", ...inputStyle }} />
                 </div>
@@ -190,7 +190,9 @@ export function RecurringManager() {
               <div className="space-y-1">
                 <Label style={labelStyle}>{r.frequencyLabel}</Label>
                 <Select value={form.frequency} onValueChange={(v) => set({ frequency: v as RecurringFrequency })}>
-                  <SelectTrigger style={{ borderRadius: "4px", border: "1px solid #e5edf5", fontSize: "13px" }}><SelectValue /></SelectTrigger>
+                  <SelectTrigger style={{ borderRadius: "4px", border: "1px solid var(--wt-border)", fontSize: "13px" }}>
+                    <span>{form.frequency === "weekly" ? r.weekly : r.monthly}</span>
+                  </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="monthly" style={{ fontSize: "13px" }}>{r.monthly}</SelectItem>
                     <SelectItem value="weekly" style={{ fontSize: "13px" }}>{r.weekly}</SelectItem>
@@ -202,7 +204,9 @@ export function RecurringManager() {
             <div className="space-y-1">
               <Label style={labelStyle}>{ex.categoryLabel}</Label>
               <Select value={form.category} onValueChange={(v) => set({ category: v as TransactionCategory })}>
-                <SelectTrigger style={{ borderRadius: "4px", border: "1px solid #e5edf5", fontSize: "13px" }}><SelectValue /></SelectTrigger>
+                <SelectTrigger style={{ borderRadius: "4px", border: "1px solid var(--wt-border)", fontSize: "13px" }}>
+                  <span>{ex.categories[form.category]}</span>
+                </SelectTrigger>
                 <SelectContent>
                   {visibleCategories.map((c) => (
                     <SelectItem key={c} value={c} style={{ fontSize: "13px" }}>{ex.categories[c]}</SelectItem>

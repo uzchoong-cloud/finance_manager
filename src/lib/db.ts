@@ -9,12 +9,25 @@ export async function addTransaction(
   const { error } = await supabase.from("transactions").insert({
     type: data.type, amount: data.amount, category: data.category,
     description: data.description, date: data.date,
+    notes: data.notes ?? null,
   });
   if (error) throw new Error(error.message);
 }
 
 export async function deleteTransaction(id: string): Promise<void> {
   const { error } = await supabase.from("transactions").delete().eq("id", id);
+  if (error) throw new Error(error.message);
+}
+
+export async function updateTransaction(
+  id: string,
+  data: Omit<Transaction, "id" | "createdAt" | "userId">
+): Promise<void> {
+  const { error } = await supabase.from("transactions").update({
+    type: data.type, amount: data.amount, category: data.category,
+    description: data.description, date: data.date,
+    notes: data.notes ?? null,
+  }).eq("id", id);
   if (error) throw new Error(error.message);
 }
 
@@ -30,7 +43,9 @@ function mapTransaction(row: Record<string, unknown>): Transaction {
     id: row.id as string, userId: row.user_id as string,
     type: row.type as Transaction["type"], amount: Number(row.amount),
     category: row.category as Transaction["category"],
-    description: row.description as string, date: row.date as string,
+    description: row.description as string,
+    notes: row.notes as string | undefined,
+    date: row.date as string,
     createdAt: new Date(row.created_at as string).getTime(),
   };
 }

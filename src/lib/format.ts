@@ -14,9 +14,11 @@ function getFormatter(currency: Currency, compact: boolean): Intl.NumberFormat {
   const key = `${currency}-${compact}`;
   if (!_cache.has(key)) {
     const { locale, decimals } = CURRENCY_META[currency];
+    // Compact always uses en-US locale so suffixes are K/M instead of 천/만
+    const fmtLocale = compact ? "en-US" : locale;
     _cache.set(
       key,
-      new Intl.NumberFormat(locale, {
+      new Intl.NumberFormat(fmtLocale, {
         style: "currency",
         currency,
         ...(compact

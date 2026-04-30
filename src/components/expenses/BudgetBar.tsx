@@ -65,7 +65,7 @@ export function BudgetBar({ totalExpenses }: BudgetBarProps) {
   if (budget === null && !editing) {
     return (
       <div className="flex items-center justify-between px-4 py-3 rounded-lg" style={{ background: "rgba(83,58,253,0.04)", border: "1px dashed rgba(83,58,253,0.2)", borderRadius: "6px" }}>
-        <p style={{ fontSize: "13px", color: "#64748d", fontFeatureSettings: '"ss01"' }}>{b.setBudgetPrompt}</p>
+        <p style={{ fontSize: "13px", color: "var(--wt-muted)", fontFeatureSettings: '"ss01"' }}>{b.setBudgetPrompt}</p>
         <button
           onClick={() => { setInputValue(""); setEditing(true); }}
           style={{ fontSize: "12px", color: "#533afd", background: "rgba(83,58,253,0.08)", border: "1px solid rgba(83,58,253,0.2)", borderRadius: "4px", padding: "4px 10px", cursor: "pointer", whiteSpace: "nowrap", marginLeft: 12, fontFeatureSettings: '"ss01"' }}
@@ -79,36 +79,38 @@ export function BudgetBar({ totalExpenses }: BudgetBarProps) {
   // Edit mode — inline input
   if (editing) {
     return (
-      <div className="flex items-center gap-2 px-4 py-3 rounded-lg" style={{ background: "#f8fafc", border: "1px solid #e5edf5", borderRadius: "6px" }}>
-        <span style={{ fontSize: "13px", color: "#273951", fontFeatureSettings: '"ss01"', whiteSpace: "nowrap" }}>{b.label}</span>
-        <div className="relative flex-1 max-w-[180px]">
-          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[13px]" style={{ color: "#64748d" }}>{symbol}</span>
-          <input
-            type="number"
-            min="1"
-            step={currency === "KRW" ? "1000" : "1"}
-            autoFocus
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder={b.placeholder}
-            style={{ width: "100%", paddingLeft: currency === "HKD" ? "40px" : "26px", paddingRight: "8px", paddingTop: "6px", paddingBottom: "6px", fontSize: "14px", fontFeatureSettings: '"tnum"', border: "1px solid #533afd", borderRadius: "4px", outline: "none", color: "#061b31", background: "#fff" }}
-          />
-        </div>
-        <button onClick={handleSave} disabled={saving}
-          style={{ fontSize: "12px", color: "#fff", background: "#533afd", border: "none", borderRadius: "4px", padding: "6px 12px", cursor: "pointer", fontFeatureSettings: '"ss01"' }}>
-          {saving ? "…" : t.common.save}
-        </button>
-        {budget !== null && (
-          <button onClick={handleRemove} disabled={saving}
-            style={{ fontSize: "12px", color: "#ea2261", background: "rgba(234,34,97,0.06)", border: "1px solid rgba(234,34,97,0.2)", borderRadius: "4px", padding: "6px 10px", cursor: "pointer", fontFeatureSettings: '"ss01"' }}>
-            {b.remove}
+      <div className="flex items-center justify-between gap-3 px-4 py-3 rounded-lg" style={{ background: "var(--wt-surface-2)", border: "1px solid var(--wt-border)", borderRadius: "6px" }}>
+        <span style={{ fontSize: "13px", color: "var(--wt-text-2)", fontFeatureSettings: '"ss01"', whiteSpace: "nowrap" }}>{b.label}</span>
+        <div className="flex items-center gap-2">
+          <div className="relative">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[13px]" style={{ color: "var(--wt-muted)" }}>{symbol}</span>
+            <input
+              type="number"
+              min="1"
+              step={currency === "KRW" ? "1000" : "1"}
+              autoFocus
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder={b.placeholder}
+              style={{ width: "160px", paddingLeft: currency === "HKD" ? "40px" : "26px", paddingRight: "8px", paddingTop: "6px", paddingBottom: "6px", fontSize: "14px", fontFeatureSettings: '"tnum"', border: "1px solid #533afd", borderRadius: "4px", outline: "none", color: "var(--wt-text)", background: "var(--wt-surface)" }}
+            />
+          </div>
+          <button onClick={handleSave} disabled={saving}
+            style={{ fontSize: "12px", color: "#fff", background: "#533afd", border: "none", borderRadius: "4px", padding: "6px 12px", cursor: "pointer", fontFeatureSettings: '"ss01"', whiteSpace: "nowrap" }}>
+            {saving ? "…" : t.common.save}
           </button>
-        )}
-        <button onClick={() => setEditing(false)}
-          style={{ fontSize: "12px", color: "#64748d", background: "none", border: "none", cursor: "pointer" }}>
-          ✕
-        </button>
+          {budget !== null && (
+            <button onClick={handleRemove} disabled={saving}
+              style={{ fontSize: "12px", color: "#ea2261", background: "rgba(234,34,97,0.06)", border: "1px solid rgba(234,34,97,0.2)", borderRadius: "4px", padding: "6px 10px", cursor: "pointer", fontFeatureSettings: '"ss01"', whiteSpace: "nowrap" }}>
+              {b.remove}
+            </button>
+          )}
+          <button onClick={() => setEditing(false)}
+            style={{ fontSize: "12px", color: "var(--wt-muted)", background: "none", border: "none", cursor: "pointer", paddingLeft: "2px" }}>
+            ✕
+          </button>
+        </div>
       </div>
     );
   }
@@ -122,7 +124,7 @@ export function BudgetBar({ totalExpenses }: BudgetBarProps) {
       {/* Header row */}
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
-          <span style={{ fontSize: "12px", fontWeight: 400, color: "#273951", fontFeatureSettings: '"ss01"' }}>{b.label}</span>
+          <span style={{ fontSize: "12px", fontWeight: 400, color: "var(--wt-text-2)", fontFeatureSettings: '"ss01"' }}>{b.label}</span>
           {isOver && (
             <span style={{ fontSize: "11px", color: "#ea2261", background: "rgba(234,34,97,0.1)", border: "1px solid rgba(234,34,97,0.25)", borderRadius: "4px", padding: "1px 7px", fontFeatureSettings: '"ss01"', fontWeight: 400 }}>
               {formatCurrency(overAmount, currency)} {b.over}
@@ -135,12 +137,12 @@ export function BudgetBar({ totalExpenses }: BudgetBarProps) {
           )}
         </div>
         <div className="flex items-center gap-2">
-          <span style={{ fontSize: "12px", color: isOver ? "#ea2261" : "#64748d", fontFeatureSettings: '"tnum"' }}>
+          <span style={{ fontSize: "12px", color: isOver ? "#ea2261" : "var(--wt-muted)", fontFeatureSettings: '"tnum"' }}>
             {formatCurrency(totalExpenses, currency)} {b.of} {formatCurrency(budget!, currency)}
           </span>
           <button
             onClick={() => { setInputValue(String(budget)); setEditing(true); }}
-            style={{ fontSize: "11px", color: "#64748d", background: "none", border: "none", cursor: "pointer", padding: "0 2px", fontFeatureSettings: '"ss01"' }}
+            style={{ fontSize: "11px", color: "var(--wt-muted)", background: "none", border: "none", cursor: "pointer", padding: "0 2px", fontFeatureSettings: '"ss01"' }}
           >
             {b.edit}
           </button>
@@ -162,11 +164,11 @@ export function BudgetBar({ totalExpenses }: BudgetBarProps) {
 
       {/* Footer row */}
       <div className="flex justify-between mt-1.5">
-        <span style={{ fontSize: "11px", color: "#64748d", fontFeatureSettings: '"ss01"' }}>
+        <span style={{ fontSize: "11px", color: "var(--wt-muted)", fontFeatureSettings: '"ss01"' }}>
           {Math.round(pct)}% {b.spent}
         </span>
         {!isOver && (
-          <span style={{ fontSize: "11px", color: "#64748d", fontFeatureSettings: '"tnum"' }}>
+          <span style={{ fontSize: "11px", color: "var(--wt-muted)", fontFeatureSettings: '"tnum"' }}>
             {formatCurrency(Math.max(budget! - totalExpenses, 0), currency)} {b.remaining}
           </span>
         )}

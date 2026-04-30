@@ -42,8 +42,12 @@ export function LoginPage() {
         padding: "40px 36px",
       }}>
         <div className="flex items-center gap-2 mb-8">
-          <span style={{ fontSize: "15px", fontWeight: 400, color: "#061b31", fontFeatureSettings: '"ss01"', letterSpacing: "-0.3px" }}>Finance</span>
-          <span style={{ background: "#533afd", color: "#fff", borderRadius: "4px", padding: "2px 8px", fontSize: "11px", fontWeight: 500 }}>Manager</span>
+          <svg width="28" height="28" viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect width="44" height="44" rx="10" fill="#533afd" />
+            <polyline points="6,32 10,20 14,26 18,14 22,22 28,10 38,6" fill="none" stroke="white" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+            <circle cx="38" cy="6" r="2.2" fill="white" />
+          </svg>
+          <span style={{ fontSize: "18px", fontWeight: 300, letterSpacing: "-0.4px", color: "#533afd", fontFeatureSettings: '"ss01"' }}>Wealthtrackr</span>
         </div>
 
         <h1 style={{ fontSize: "1.5rem", fontWeight: 300, color: "#061b31", letterSpacing: "-0.4px", fontFeatureSettings: '"ss01"', marginBottom: 6 }}>

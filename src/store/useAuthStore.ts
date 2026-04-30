@@ -11,6 +11,7 @@ interface AuthState {
   logout: () => Promise<void>;
   initialize: () => Promise<void>;
   changePassword: (newPassword: string) => Promise<void>;
+  updateUsername: (newUsername: string) => Promise<void>;
   updateSettings: (settings: Partial<Pick<Profile, "language" | "currency" | "startingBalance" | "monthlyBudget">>) => Promise<void>;
 }
 
@@ -68,6 +69,32 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       });
       if (error) throw new Error(error.message);
       set({ mustChangePassword: false });
+    } finally {
+      set({ loading: false });
+    }
+  },
+
+  updateUsername: async (newUsername: string) => {
+    const { profile } = get();
+    if (!profile) return;
+    const clean = newUsername.trim().toLowerCase().replace(/\s/g, "");
+    if (!clean) throw new Error("Username cannot be empty");
+    set({ loading: true });
+    try {
+      // Update profiles table
+      const { error: dbError } = await supabase
+        .from("profiles")
+        .update({ username: clean })
+        .eq("id", profile.id);
+      if (dbError) throw new Error(dbError.message);
+
+      // Update Supabase auth email (username is stored as email)
+      const { error: authError } = await supabase.auth.updateUser({
+        email: toEmail(clean),
+      });
+      if (authError) throw new Error(authError.message);
+
+      set({ profile: { ...profile, username: clean } });
     } finally {
       set({ loading: false });
     }
