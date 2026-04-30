@@ -59,10 +59,10 @@ export function Header() {
     <>
       <header className="sticky top-0 z-50 backdrop-blur-[12px]" style={{ background: "color-mix(in srgb, var(--wt-surface) 92%, transparent)", borderBottom: "1px solid var(--wt-border)" }}>
         <div className="px-6 sm:px-10">
-          <div className="grid h-14 items-center" style={{ gridTemplateColumns: "1fr auto 1fr" }}>
+          <div className="relative flex h-14 items-center justify-between">
 
             {/* Left — logo */}
-            <Link href="/" style={{ textDecoration: "none", display: "flex", alignItems: "center" }}>
+            <Link href="/" style={{ textDecoration: "none", display: "flex", alignItems: "center", flexShrink: 0 }}>
               <svg width="28" height="28" viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <rect width="44" height="44" rx="10" fill="#533afd" />
                 <polyline points="6,32 10,20 14,26 18,14 22,22 28,10 38,6" fill="none" stroke="white" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
@@ -73,13 +73,13 @@ export function Header() {
               </span>
             </Link>
 
-            {/* Centre — navigation */}
-            <nav className="hidden items-center gap-1 sm:flex">
+            {/* Centre — navigation, absolutely centred so it's unaffected by left/right widths */}
+            <nav className="hidden sm:flex items-center gap-1 absolute left-1/2 -translate-x-1/2">
               {NAV_LINKS.map(({ href, label }) => {
                 const isActive = href === "/" ? pathname === "/" : pathname.startsWith(href);
                 return (
-                  <Link key={href} href={href} className="rounded-md px-3 py-1.5 text-[14px] transition-colors"
-                    style={{ fontFeatureSettings: '"ss01"', fontWeight: 400, color: isActive ? "#533afd" : "var(--wt-text)", background: isActive ? "rgba(83,58,253,0.06)" : "transparent", borderRadius: "6px", textDecoration: "none" }}>
+                  <Link key={href} href={href} className="px-3 py-1.5 text-[14px] transition-colors"
+                    style={{ fontFeatureSettings: '"ss01"', fontWeight: 400, color: isActive ? "#533afd" : "var(--wt-text)", background: isActive ? "rgba(83,58,253,0.06)" : "transparent", borderRadius: "6px", textDecoration: "none", whiteSpace: "nowrap" }}>
                     {label}
                   </Link>
                 );
@@ -87,7 +87,7 @@ export function Header() {
             </nav>
 
             {/* Right — user info + actions */}
-            <div className="flex items-center gap-2 justify-end">
+            <div className="flex items-center gap-2 flex-shrink-0">
               {profile && (
                 <span style={{ fontSize: "12px", color: "var(--wt-muted)", fontFeatureSettings: '"ss01"' }}>
                   {profile.username}
@@ -100,7 +100,7 @@ export function Header() {
               )}
               {isAdmin && (
                 <button onClick={() => setUserMgmtOpen(true)}
-                  style={{ height: 30, fontSize: "12px", color: "#533afd", background: "rgba(83,58,253,0.06)", border: "1px solid rgba(83,58,253,0.2)", borderRadius: "4px", padding: "0 10px", cursor: "pointer", fontFeatureSettings: '"ss01"' }}>
+                  style={{ height: 30, fontSize: "12px", color: "#533afd", background: "rgba(83,58,253,0.06)", border: "1px solid rgba(83,58,253,0.2)", borderRadius: "4px", padding: "0 10px", cursor: "pointer", fontFeatureSettings: '"ss01"', whiteSpace: "nowrap" }}>
                   {t.common.manageUsers}
                 </button>
               )}

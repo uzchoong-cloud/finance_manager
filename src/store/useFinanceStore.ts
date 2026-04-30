@@ -3,34 +3,6 @@ import { subscribeWithSelector } from "zustand/middleware";
 import type { Transaction, StockHolding, StockWithValue, PortfolioSummary, ExpenseSummary, TransactionCategory, RecurringTransaction } from "@/types";
 import { getAllTransactions, getAllStockHoldings, getCachedPrice, setCachedPrice, getAllRecurring } from "@/lib/db";
 
-const y = new Date().getFullYear();
-const m = String(new Date().getMonth() + 1).padStart(2, "0");
-const d = (n: number) => `${y}-${m}-${String(n).padStart(2, "0")}`;
-
-const MOCK_TRANSACTIONS: Transaction[] = [
-  { id: "mt-1",  type: "income",  amount: 5800,  category: "salary",        description: "Monthly salary",         date: d(1),  createdAt: 0 },
-  { id: "mt-2",  type: "expense", amount: 1800,  category: "housing",       description: "Rent",                   date: d(1),  createdAt: 0 },
-  { id: "mt-3",  type: "expense", amount: 94,    category: "utilities",     description: "Electricity bill",       date: d(3),  createdAt: 0 },
-  { id: "mt-4",  type: "expense", amount: 62,    category: "food",          description: "Weekly groceries",       date: d(5),  createdAt: 0 },
-  { id: "mt-5",  type: "expense", amount: 14,    category: "transport",     description: "Subway card top-up",     date: d(6),  createdAt: 0 },
-  { id: "mt-6",  type: "expense", amount: 48,    category: "entertainment", description: "Netflix + Spotify",      date: d(8),  createdAt: 0 },
-  { id: "mt-7",  type: "expense", amount: 138,   category: "food",          description: "Dinner with friends",    date: d(10), createdAt: 0 },
-  { id: "mt-8",  type: "expense", amount: 320,   category: "shopping",      description: "New running shoes",      date: d(12), createdAt: 0 },
-  { id: "mt-9",  type: "income",  amount: 1200,  category: "freelance",     description: "Design project payout",  date: d(15), createdAt: 0 },
-  { id: "mt-10", type: "expense", amount: 55,    category: "food",          description: "Weekly groceries",       date: d(16), createdAt: 0 },
-  { id: "mt-11", type: "expense", amount: 200,   category: "healthcare",    description: "Dental check-up",        date: d(18), createdAt: 0 },
-  { id: "mt-12", type: "expense", amount: 36,    category: "transport",     description: "Grab rides",             date: d(20), createdAt: 0 },
-  { id: "mt-13", type: "expense", amount: 88,    category: "food",          description: "Weekly groceries",       date: d(22), createdAt: 0 },
-  { id: "mt-14", type: "expense", amount: 120,   category: "education",     description: "Udemy course bundle",    date: d(24), createdAt: 0 },
-  { id: "mt-15", type: "expense", amount: 42,    category: "entertainment", description: "Cinema tickets",         date: d(26), createdAt: 0 },
-];
-
-const MOCK_HOLDINGS: StockHolding[] = [
-  { id: "mh-1", ticker: "AAPL", name: "Apple Inc.",      shares: 15, averageCostPerShare: 168, createdAt: 0, updatedAt: 0 },
-  { id: "mh-2", ticker: "MSFT", name: "Microsoft Corp.", shares: 10, averageCostPerShare: 382, createdAt: 0, updatedAt: 0 },
-  { id: "mh-3", ticker: "NVDA", name: "NVIDIA Corp.",    shares: 8,  averageCostPerShare: 795, createdAt: 0, updatedAt: 0 },
-  { id: "mh-4", ticker: "TSLA", name: "Tesla Inc.",      shares: 20, averageCostPerShare: 210, createdAt: 0, updatedAt: 0 },
-];
 
 interface PriceFetchState { [ticker: string]: "idle" | "loading" | "error" }
 
@@ -73,12 +45,12 @@ export const useFinanceStore = create<FinanceState>()(
 
     loadTransactions: async () => {
       const transactions = await getAllTransactions();
-      set({ transactions: transactions.length > 0 ? transactions : MOCK_TRANSACTIONS, transactionsLoaded: true });
+      set({ transactions, transactionsLoaded: true });
     },
 
     loadStockHoldings: async () => {
       const stockHoldings = await getAllStockHoldings();
-      set({ stockHoldings: stockHoldings.length > 0 ? stockHoldings : MOCK_HOLDINGS, holdingsLoaded: true });
+      set({ stockHoldings, holdingsLoaded: true });
     },
 
     loadRecurring: async () => {
