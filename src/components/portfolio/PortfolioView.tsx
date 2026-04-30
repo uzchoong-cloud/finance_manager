@@ -115,7 +115,7 @@ export function PortfolioView() {
   const handleSmsParse = () => {
     setSmsError("");
     const result = parseBrokerSMS(smsText);
-    if (!result) { setSmsError("문자 형식을 인식할 수 없습니다. 내용을 확인해 주세요."); return; }
+    if (!result) { setSmsError(p.smsParseError); return; }
     setSmsParsed(result);
   };
 
@@ -128,22 +128,22 @@ export function PortfolioView() {
         (h) => h.ticker === smsParsed.code || h.name === smsParsed.name
       );
       if (smsParsed.type === "sell") {
-        if (!existing?.id) throw new Error(`'${smsParsed.name}' 종목을 보유하고 있지 않습니다.`);
+        if (!existing?.id) throw new Error(p.smsNoHolding(smsParsed.name));
         await sellShares(existing.id, smsParsed.shares, smsParsed.price, smsDate);
-        toast.success(`${smsParsed.name} ${smsParsed.shares}주 매도 등록 완료`);
+        toast.success(p.smsSellSuccess(smsParsed.name, smsParsed.shares));
       } else {
         if (existing?.id) {
           await buyShares(existing.id, smsParsed.shares, smsParsed.price, smsDate);
         } else {
           await addStockHolding(smsParsed.code || smsParsed.name, smsParsed.name, smsParsed.shares, smsParsed.price, smsDate);
         }
-        toast.success(`${smsParsed.name} ${smsParsed.shares}주 매수 등록 완료`);
+        toast.success(p.smsBuySuccess(smsParsed.name, smsParsed.shares));
       }
       await loadStockHoldings();
       await fetchStockPrices();
       setSmsOpen(false); setSmsText(""); setSmsParsed(null); setSmsDate(todayISO());
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "등록 실패");
+      toast.error(err instanceof Error ? err.message : p.smsFail);
     } finally { setSaving(false); }
   };
 
@@ -160,7 +160,7 @@ export function PortfolioView() {
           <Button onClick={fetchStockPrices} variant="outline" style={{ borderRadius: "4px", fontSize: "13px", fontFeatureSettings: '"ss01"', border: "1px solid var(--wt-border)", color: "var(--wt-text-2)" }}>{p.refresh}</Button>
           <Button onClick={() => { setSmsOpen(true); setSmsText(""); setSmsParsed(null); setSmsError(""); setSmsDate(todayISO()); }} variant="outline"
             style={{ borderRadius: "4px", fontSize: "13px", fontFeatureSettings: '"ss01"', border: "1px solid var(--wt-border)", color: "var(--wt-text-2)" }}>
-            📋 문자 붙여넣기
+            {p.smsButton}
           </Button>
           <Button onClick={openAdd} style={{ background: "#533afd", color: "#fff", borderRadius: "4px", fontFeatureSettings: '"ss01"', fontWeight: 400, fontSize: "14px", border: "none" }}>{p.addStock}</Button>
         </div>
@@ -235,7 +235,7 @@ export function PortfolioView() {
         <DialogContent style={{ borderRadius: "8px", border: "1px solid var(--wt-border)", maxWidth: 460 }}>
           <DialogHeader>
             <DialogTitle style={{ fontSize: "1.125rem", fontWeight: 300, color: "var(--wt-text)", fontFeatureSettings: '"ss01"', letterSpacing: "-0.2px" }}>
-              체결 문자 붙여넣기
+              {p.smsDialogTitle}
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4 pt-2">
@@ -245,7 +245,7 @@ export function PortfolioView() {
                 <textarea
                   value={smsText}
                   onChange={(e) => { setSmsText(e.target.value); setSmsError(""); }}
-                  placeholder={"증권사에서 받은 체결 문자를 여기에 붙여넣으세요.\n\n종목명, 체결종류(매수/매도), 체결수량, 체결단가가\n포함된 문자라면 자동으로 인식합니다."}
+                  placeholder={p.smsPlaceholder}
                   rows={8}
                   style={{
                     width: "100%", borderRadius: "4px", border: "1px solid var(--wt-border)",
@@ -257,7 +257,7 @@ export function PortfolioView() {
                 {smsError && <p style={{ fontSize: "12px", color: "#ea2261" }}>{smsError}</p>}
                 <Button onClick={handleSmsParse} disabled={!smsText.trim()} className="w-full"
                   style={{ background: "#533afd", color: "#fff", borderRadius: "4px", fontFeatureSettings: '"ss01"', fontWeight: 400, fontSize: "14px", border: "none" }}>
-                  파싱하기
+                  {p.smsParse}
                 </Button>
               </>
             )}
@@ -267,49 +267,49 @@ export function PortfolioView() {
               <>
                 <div className="rounded-lg p-4 space-y-3" style={{ background: "var(--wt-surface-2)", border: "1px solid var(--wt-border)", borderRadius: "6px" }}>
                   <div className="flex items-center justify-between">
-                    <span style={{ fontSize: "12px", color: "var(--wt-muted)", fontFeatureSettings: '"ss01"' }}>체결종류</span>
+                    <span style={{ fontSize: "12px", color: "var(--wt-muted)", fontFeatureSettings: '"ss01"' }}>{p.smsTradeType}</span>
                     <span style={{
                       fontSize: "13px", fontWeight: 500, borderRadius: "4px", padding: "2px 10px",
                       background: smsParsed.type === "buy" ? "rgba(16,140,61,0.1)" : "rgba(234,34,97,0.1)",
                       color: smsParsed.type === "buy" ? "#108c3d" : "#ea2261",
                     }}>
-                      {smsParsed.type === "buy" ? "매수" : "매도"}
+                      {smsParsed.type === "buy" ? p.buy : p.sell}
                     </span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span style={{ fontSize: "12px", color: "var(--wt-muted)", fontFeatureSettings: '"ss01"' }}>종목</span>
+                    <span style={{ fontSize: "12px", color: "var(--wt-muted)", fontFeatureSettings: '"ss01"' }}>{p.smsStock}</span>
                     <span style={{ fontSize: "13px", color: "var(--wt-text)", fontFeatureSettings: '"ss01"' }}>
                       {smsParsed.name} <span style={{ color: "var(--wt-muted)" }}>({smsParsed.code})</span>
                     </span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span style={{ fontSize: "12px", color: "var(--wt-muted)", fontFeatureSettings: '"ss01"' }}>체결수량</span>
-                    <span style={{ fontSize: "13px", fontFeatureSettings: '"tnum"', color: "var(--wt-text)" }}>{smsParsed.shares.toLocaleString()}주</span>
+                    <span style={{ fontSize: "12px", color: "var(--wt-muted)", fontFeatureSettings: '"ss01"' }}>{p.smsQuantity}</span>
+                    <span style={{ fontSize: "13px", fontFeatureSettings: '"tnum"', color: "var(--wt-text)" }}>{smsParsed.shares.toLocaleString()}</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span style={{ fontSize: "12px", color: "var(--wt-muted)", fontFeatureSettings: '"ss01"' }}>체결단가</span>
+                    <span style={{ fontSize: "12px", color: "var(--wt-muted)", fontFeatureSettings: '"ss01"' }}>{p.smsPrice}</span>
                     <span style={{ fontSize: "13px", fontFeatureSettings: '"tnum"', color: "var(--wt-text)" }}>{formatCurrency(smsParsed.price, currency)}</span>
                   </div>
                   <div className="flex items-center justify-between" style={{ borderTop: "1px solid var(--wt-border)", paddingTop: "8px", marginTop: "4px" }}>
-                    <span style={{ fontSize: "12px", color: "var(--wt-muted)", fontFeatureSettings: '"ss01"' }}>총 금액</span>
+                    <span style={{ fontSize: "12px", color: "var(--wt-muted)", fontFeatureSettings: '"ss01"' }}>{p.smsTotal}</span>
                     <span style={{ fontSize: "14px", fontWeight: 500, fontFeatureSettings: '"tnum"', color: "var(--wt-text)" }}>
                       {formatCurrency(smsParsed.shares * smsParsed.price, currency)}
                     </span>
                   </div>
                 </div>
                 <div className="space-y-1">
-                  <Label style={{ fontFeatureSettings: '"ss01"', color: "var(--wt-text-2)", fontSize: "13px" }}>체결일자</Label>
+                  <Label style={{ fontFeatureSettings: '"ss01"', color: "var(--wt-text-2)", fontSize: "13px" }}>{p.smsDate}</Label>
                   <input type="date" value={smsDate} onChange={(e) => setSmsDate(e.target.value)}
                     style={{ width: "100%", borderRadius: "4px", border: "1px solid var(--wt-border)", fontSize: "14px", padding: "8px 12px", background: "var(--wt-surface)", color: "var(--wt-text)", outline: "none" }} />
                 </div>
                 <div className="flex gap-2">
                   <Button variant="outline" onClick={() => setSmsParsed(null)} className="flex-1"
                     style={{ borderRadius: "4px", fontSize: "13px", border: "1px solid var(--wt-border)", color: "var(--wt-text-2)" }}>
-                    다시 입력
+                    {p.smsReset}
                   </Button>
                   <Button onClick={handleSmsConfirm} disabled={saving} className="flex-1"
                     style={{ background: "#533afd", color: "#fff", borderRadius: "4px", fontFeatureSettings: '"ss01"', fontWeight: 400, fontSize: "14px", border: "none" }}>
-                    {saving ? "등록 중..." : "등록하기"}
+                    {saving ? p.smsConfirming : p.smsConfirm}
                   </Button>
                 </div>
               </>
