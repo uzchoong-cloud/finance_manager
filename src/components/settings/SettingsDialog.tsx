@@ -4,6 +4,8 @@ import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useI18n } from "@/lib/i18n";
+import { useFinanceStore } from "@/store/useFinanceStore";
+import { seedDemoData, clearDemoData, hasDemoData } from "@/lib/demo";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -44,6 +46,9 @@ export function SettingsDialog({ open, onOpenChange }: Props) {
   const [confirmPassword, setConfirmPassword] = useState("");
 
   const [saving, setSaving] = useState(false);
+  const [demoLoading, setDemoLoading] = useState(false);
+  const [demoLoaded, setDemoLoaded] = useState(false);
+  const loadAll = useFinanceStore((s) => s.loadAll);
 
   useEffect(() => {
     if (profile) {
@@ -57,6 +62,8 @@ export function SettingsDialog({ open, onOpenChange }: Props) {
     if (!open) {
       setShowUsername(false); setNewUsername("");
       setShowPassword(false); setNewPassword(""); setConfirmPassword("");
+    } else {
+      hasDemoData().then(setDemoLoaded);
     }
   }, [open]);
 
@@ -96,6 +103,34 @@ export function SettingsDialog({ open, onOpenChange }: Props) {
       toast.error(msg);
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleLoadDemo = async () => {
+    setDemoLoading(true);
+    try {
+      await seedDemoData();
+      await loadAll();
+      setDemoLoaded(true);
+      toast.success("Demo data loaded");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to load demo data");
+    } finally {
+      setDemoLoading(false);
+    }
+  };
+
+  const handleClearDemo = async () => {
+    setDemoLoading(true);
+    try {
+      await clearDemoData();
+      await loadAll();
+      setDemoLoaded(false);
+      toast.success("Demo data cleared");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to clear demo data");
+    } finally {
+      setDemoLoading(false);
     }
   };
 
@@ -221,6 +256,47 @@ export function SettingsDialog({ open, onOpenChange }: Props) {
                   />
                 </div>
             }
+          </div>
+
+          {/* Demo Data */}
+          <div className="space-y-2.5" style={divider}>
+            <div className="pt-5">
+              <p style={sectionLabel}>Demo Data</p>
+            </div>
+            <p style={{ fontSize: "12px", color: "var(--wt-muted)", fontFeatureSettings: '"ss01"', lineHeight: 1.5 }}>
+              {demoLoaded
+                ? "Demo transactions and holdings are currently loaded. Remove them when you're done."
+                : "Populate the app with realistic sample data (3 months of transactions + Korean & US stock holdings) to show someone how it works."}
+            </p>
+            {demoLoaded ? (
+              <button
+                type="button"
+                onClick={handleClearDemo}
+                disabled={demoLoading}
+                style={{
+                  width: "100%", padding: "9px 12px", fontSize: "13px", borderRadius: "4px",
+                  cursor: demoLoading ? "not-allowed" : "pointer", fontFeatureSettings: '"ss01"',
+                  border: "1px solid rgba(234,34,97,0.35)", background: "rgba(234,34,97,0.05)",
+                  color: demoLoading ? "var(--wt-muted)" : "#ea2261", transition: "all 0.12s",
+                }}
+              >
+                {demoLoading ? "Clearing…" : "🗑 Clear Demo Data"}
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={handleLoadDemo}
+                disabled={demoLoading}
+                style={{
+                  width: "100%", padding: "9px 12px", fontSize: "13px", borderRadius: "4px",
+                  cursor: demoLoading ? "not-allowed" : "pointer", fontFeatureSettings: '"ss01"',
+                  border: "1px solid rgba(83,58,253,0.35)", background: "rgba(83,58,253,0.05)",
+                  color: demoLoading ? "var(--wt-muted)" : "#533afd", transition: "all 0.12s",
+                }}
+              >
+                {demoLoading ? "Loading…" : "✨ Load Demo Data"}
+              </button>
+            )}
           </div>
 
           {/* Single save button */}
