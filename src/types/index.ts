@@ -76,6 +76,8 @@ export interface PortfolioSummary {
   totalGainLoss: number | null;
   totalGainLossPercent: number | null;
   holdings: StockWithValue[];
+  /** True when holdings span multiple currencies — totals cannot be meaningfully summed */
+  mixedCurrencies: boolean;
 }
 
 export interface ExpenseSummary {

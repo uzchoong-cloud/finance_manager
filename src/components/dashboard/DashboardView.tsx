@@ -23,7 +23,9 @@ export function DashboardView() {
   const startingBalance = profile?.startingBalance ?? 0;
   const netWorth = getNetWorth(startingBalance);
   const { totalIncome, totalExpenses, netCashFlow, byCategory } = getExpenseSummary();
-  const { totalValue, totalGainLossPercent } = getPortfolioSummary();
+  const { totalValue, totalGainLossPercent, mixedCurrencies } = getPortfolioSummary();
+  const priceFetchState = useFinanceStore((s) => s.priceFetchState);
+  const allPricesLoaded = Object.values(priceFetchState).length > 0 && Object.values(priceFetchState).every((v) => v !== "loading");
 
   const recentTransactions = transactions.slice(0, 5);
   const isLoaded = transactionsLoaded && holdingsLoaded;
@@ -42,7 +44,8 @@ export function DashboardView() {
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <StatCard
           label={d.netWorth}
-          value={!isLoaded ? "—" : netWorth === null ? d.pendingPrices : formatCurrency(netWorth, currency)}
+          value={!isLoaded ? "—" : netWorth === null ? (mixedCurrencies ? "—" : d.pendingPrices) : formatCurrency(netWorth, currency)}
+          subValue={!isLoaded ? undefined : mixedCurrencies && netWorth === null ? d.multipleCurrencies : undefined}
           trend="neutral"
           tooltip={d.tooltipNetWorth}
         />
@@ -59,8 +62,8 @@ export function DashboardView() {
         />
         <StatCard
           label={d.portfolioValue}
-          value={totalValue === null ? t.common.fetching : formatCurrency(totalValue, currency)}
-          subValue={totalGainLossPercent !== null ? `${formatPercent(totalGainLossPercent)} ${d.totalReturn}` : undefined}
+          value={mixedCurrencies ? "—" : totalValue === null ? (allPricesLoaded ? "—" : t.common.fetching) : formatCurrency(totalValue, currency)}
+          subValue={mixedCurrencies ? d.multipleCurrencies : totalGainLossPercent !== null ? `${formatPercent(totalGainLossPercent)} ${d.totalReturn}` : undefined}
           trend={totalGainLossPercent === null ? "neutral" : totalGainLossPercent >= 0 ? "up" : "down"}
           tooltip={d.tooltipPortfolio}
         />

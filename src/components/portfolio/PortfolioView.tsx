@@ -85,7 +85,8 @@ export function PortfolioView() {
   const p = t.portfolio;
   const symbol = CURRENCY_SYMBOL[currency] ?? "$";
 
-  const { totalValue, totalCostBasis, totalGainLoss, totalGainLossPercent, holdings } = getPortfolioSummary();
+  const { totalValue, totalCostBasis, totalGainLoss, totalGainLossPercent, holdings, mixedCurrencies } = getPortfolioSummary();
+  const allPricesLoaded = Object.keys(priceFetchState).length > 0 && Object.values(priceFetchState).every((v) => v !== "loading");
 
   // If all holdings share one currency use it for the summary totals; otherwise fall back to profile currency
   const holdingCurrencies = [...new Set(holdings.map((h) => h.currency))];
@@ -183,9 +184,9 @@ export function PortfolioView() {
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <StatCard label={p.portfolioValue} value={totalValue === null ? t.common.fetching : formatCurrency(totalValue, summaryCurrency)} trend="neutral" />
-        <StatCard label={p.costBasis} value={formatCurrency(totalCostBasis, summaryCurrency)} trend="neutral" />
-        <StatCard label={p.totalReturn} value={totalGainLoss === null ? "—" : `${totalGainLoss >= 0 ? "+" : ""}${formatCurrency(totalGainLoss, summaryCurrency)}`} subValue={totalGainLossPercent !== null ? formatPercent(totalGainLossPercent) : undefined} trend={totalGainLoss === null ? "neutral" : totalGainLoss >= 0 ? "up" : "down"} />
+        <StatCard label={p.portfolioValue} value={mixedCurrencies ? "—" : totalValue === null ? (allPricesLoaded ? "—" : t.common.fetching) : formatCurrency(totalValue, summaryCurrency)} subValue={mixedCurrencies ? p.multipleCurrencies : undefined} trend="neutral" />
+        <StatCard label={p.costBasis} value={mixedCurrencies ? "—" : formatCurrency(totalCostBasis, summaryCurrency)} subValue={mixedCurrencies ? p.multipleCurrencies : undefined} trend="neutral" />
+        <StatCard label={p.totalReturn} value={mixedCurrencies || totalGainLoss === null ? "—" : `${totalGainLoss >= 0 ? "+" : ""}${formatCurrency(totalGainLoss, summaryCurrency)}`} subValue={mixedCurrencies ? p.multipleCurrencies : totalGainLossPercent !== null ? formatPercent(totalGainLossPercent) : undefined} trend={totalGainLoss === null ? "neutral" : totalGainLoss >= 0 ? "up" : "down"} />
       </div>
 
       {holdings.length > 0 && <AllocationChart holdings={holdings} />}

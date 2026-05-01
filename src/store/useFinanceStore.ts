@@ -136,20 +136,21 @@ export const useFinanceStore = create<FinanceState>()(
       const hasAllPrices = holdings.length > 0 && holdings.every((h) => h.currentValue !== null);
       // Only sum totals when all holdings share the same currency (mixing USD + KRW is meaningless)
       const currencies = [...new Set(holdings.map((h) => h.currency))];
-      const singleCurrency = currencies.length <= 1;
-      const totalValue = hasAllPrices && singleCurrency
+      const mixedCurrencies = currencies.length > 1;
+      const totalValue = hasAllPrices && !mixedCurrencies
         ? holdings.reduce((sum, h) => sum + (h.currentValue ?? 0), 0)
         : null;
       const totalGainLoss = totalValue !== null ? totalValue - totalCostBasis : null;
       const totalGainLossPercent = totalGainLoss !== null && totalCostBasis > 0 ? (totalGainLoss / totalCostBasis) * 100 : null;
-      return { totalValue, totalCostBasis, totalGainLoss, totalGainLossPercent, holdings };
+      return { totalValue, totalCostBasis, totalGainLoss, totalGainLossPercent, holdings, mixedCurrencies };
     },
 
     getNetWorth: (startingBalance = 0): number | null => {
       const { transactions } = get();
-      const { totalValue } = get().getPortfolioSummary();
+      const { totalValue, mixedCurrencies } = get().getPortfolioSummary();
       const cashBalance = transactions.reduce((sum, t) => t.type === "income" ? sum + t.amount : sum - t.amount, 0);
-      if (totalValue === null) return null;
+      // Can't compute a single net worth figure when portfolio spans multiple currencies
+      if (mixedCurrencies || totalValue === null) return null;
       return startingBalance + cashBalance + totalValue;
     },
   }))
