@@ -21,6 +21,10 @@ function iso(year: number, month: number, day: number) {
 // ─── Seed ────────────────────────────────────────────────────────────────────
 
 export async function seedDemoData(): Promise<void> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("Not authenticated");
+  const uid = user.id;
+
   const y = 2026;
 
   // ── Transactions ─────────────────────────────────────────────────────────
@@ -66,7 +70,7 @@ export async function seedDemoData(): Promise<void> {
   ];
 
   const { error: txErr } = await supabase.from("transactions").insert(
-    txRows.map((r) => ({ ...r, notes: DEMO_NOTES }))
+    txRows.map((r) => ({ ...r, user_id: uid, notes: DEMO_NOTES }))
   );
   if (txErr) throw new Error(`트랜잭션 생성 실패: ${txErr.message}`);
 
@@ -80,18 +84,24 @@ export async function seedDemoData(): Promise<void> {
     { ticker: "AAPL",   rawName: "Apple Inc.",    shares:  5, avg:  182.5, buyDate: iso(y, 1, 20) },
   ];
 
+  // Skip any ticker the user already holds to avoid the UNIQUE(user_id, ticker) conflict
+  const { data: existingHoldings } = await supabase
+    .from("stock_holdings").select("ticker").eq("user_id", uid);
+  const existingTickers = new Set((existingHoldings ?? []).map((h) => h.ticker as string));
+
   for (const h of holdings) {
+    if (existingTickers.has(h.ticker)) continue;
     const demoName = `${DEMO_NAME_PREFIX}${h.rawName}`;
 
     const { data: holding, error: hErr } = await supabase
       .from("stock_holdings")
-      .insert({ ticker: h.ticker, name: demoName, shares: h.shares, average_cost_per_share: h.avg })
+      .insert({ user_id: uid, ticker: h.ticker, name: demoName, shares: h.shares, average_cost_per_share: h.avg })
       .select()
       .single();
     if (hErr) throw new Error(`종목 생성 실패 (${h.ticker}): ${hErr.message}`);
 
     const { error: stErr } = await supabase.from("stock_transactions").insert({
-      holding_id: holding.id, ticker: h.ticker,
+      user_id: uid, holding_id: holding.id, ticker: h.ticker,
       type: "buy", shares: h.shares, price_per_share: h.avg, date: h.buyDate,
       notes: DEMO_NOTES,
     });
