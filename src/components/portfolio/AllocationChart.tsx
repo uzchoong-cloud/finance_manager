@@ -15,8 +15,11 @@ function asCurrency(c: string): Currency {
   return (c === "KRW" || c === "HKD") ? c : "USD";
 }
 
+const displayName = (name: string) => name.replace(/^\[Demo\] /, "");
+
 interface Slice {
   ticker: string;
+  name: string;
   costBasis: number;
   pct: number;
   color: string;
@@ -58,6 +61,7 @@ export function AllocationChart({ holdings }: Props) {
 
   const slices: Slice[] = eligible.map((h, i) => ({
     ticker: h.ticker,
+    name: displayName(h.name),
     costBasis: h.costBasis,
     pct: (h.costBasis / total) * 100,
     color: COLORS[i % COLORS.length],
@@ -104,7 +108,7 @@ export function AllocationChart({ holdings }: Props) {
             {/* Centre label */}
             {active ? (
               <>
-                <text x={cx} y={cy - 10} textAnchor="middle" style={{ fontSize: 13, fontWeight: 500, fill: "var(--wt-text)", fontFamily: "inherit" }}>{active.ticker}</text>
+                <text x={cx} y={cy - 10} textAnchor="middle" style={{ fontSize: 13, fontWeight: 500, fill: "var(--wt-text)", fontFamily: "inherit" }}>{active.name}</text>
                 <text x={cx} y={cy + 8} textAnchor="middle" style={{ fontSize: 11, fill: "var(--wt-muted)", fontFamily: "inherit" }}>{active.pct.toFixed(1)}%</text>
                 <text x={cx} y={cy + 24} textAnchor="middle" style={{ fontSize: 10, fill: "var(--wt-muted)", fontFamily: "inherit" }}>
                   {formatCurrency(active.costBasis, asCurrency(active.currency))}
@@ -135,7 +139,10 @@ export function AllocationChart({ holdings }: Props) {
               >
                 <div className="flex items-center gap-2.5 min-w-0">
                   <span style={{ width: 10, height: 10, borderRadius: "50%", background: s.color, flexShrink: 0, display: "inline-block" }} />
-                  <span style={{ fontSize: "13px", fontWeight: 400, color: "var(--wt-text)", fontFeatureSettings: '"ss01"' }}>{s.ticker}</span>
+                  <div className="min-w-0">
+                    <span style={{ fontSize: "13px", fontWeight: 400, color: "var(--wt-text)", fontFeatureSettings: '"ss01"' }}>{s.name}</span>
+                    <span style={{ fontSize: "11px", color: "var(--wt-muted)", marginLeft: 6, fontFeatureSettings: '"tnum"' }}>{s.ticker}</span>
+                  </div>
                 </div>
                 <div className="flex items-center gap-3 ml-2 shrink-0">
                   <span style={{ fontSize: "12px", color: "var(--wt-muted)", fontFeatureSettings: '"tnum"' }}>
