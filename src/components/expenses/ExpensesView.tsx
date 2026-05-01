@@ -79,7 +79,7 @@ export function ExpensesView() {
   const openEdit = (tx: Transaction) => {
     setEditingTx(tx);
     setType(tx.type); setAmount(String(tx.amount)); setCategory(tx.category);
-    setDescription(tx.description); setNotes(tx.notes ?? ""); setDate(tx.date);
+    setDescription(tx.description); setNotes(tx.notes === "__demo__" ? "" : (tx.notes ?? "")); setDate(tx.date);
     setOpen(true);
   };
 
@@ -249,7 +249,7 @@ export function ExpensesView() {
                   <div className="min-w-0">
                     <p className="truncate" style={{ fontSize: "14px", fontWeight: 300, color: "var(--wt-text)", fontFeatureSettings: '"ss01"' }}>{tx.description}</p>
                     <p style={{ fontSize: "11px", color: "var(--wt-muted)", fontFeatureSettings: '"ss01"' }}>{formatDate(tx.date, locale)}</p>
-                    {tx.notes && (
+                    {tx.notes && tx.notes !== "__demo__" && (
                       <p className="truncate opacity-0 group-hover:opacity-100 transition-opacity duration-150"
                         style={{ fontSize: "11px", color: "#533afd", fontFeatureSettings: '"ss01"', marginTop: "2px" }}>
                         💬 {tx.notes}

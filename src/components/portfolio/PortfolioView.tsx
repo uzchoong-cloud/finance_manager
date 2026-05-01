@@ -20,6 +20,9 @@ const CURRENCY_SYMBOL: Record<string, string> = { USD: "$", KRW: "₩", HKD: "HK
 /** Returns true for 6-digit KRX stock codes (KOSPI / KOSDAQ) */
 const isKoreanTicker = (t: string) => /^\d{6}$/.test(t);
 
+/** Strip the [Demo] prefix added by the seed so demo holdings look like real ones */
+const displayName = (name: string) => name.replace(/^\[Demo\] /, "");
+
 /** Cast an arbitrary currency string to our supported Currency union */
 function asCurrency(c: string): Currency {
   return (c === "KRW" || c === "HKD") ? c : "USD";
@@ -211,7 +214,7 @@ export function PortfolioView() {
                       <span style={{ fontSize: "15px", fontWeight: 400, color: "var(--wt-text)", fontFeatureSettings: '"ss01"', letterSpacing: "-0.2px" }}>{h.ticker}</span>
                       <span className="rounded px-1.5 py-0.5 text-[10px]" style={{ background: "rgba(83,58,253,0.08)", color: "#533afd", border: "1px solid rgba(83,58,253,0.2)", borderRadius: "4px", fontFeatureSettings: '"tnum"' }}>{formatShares(h.shares)} sh</span>
                     </div>
-                    <p style={{ fontSize: "12px", color: "var(--wt-muted)", fontFeatureSettings: '"ss01"' }}>{h.name}</p>
+                    <p style={{ fontSize: "12px", color: "var(--wt-muted)", fontFeatureSettings: '"ss01"' }}>{displayName(h.name)}</p>
                   </div>
                   <div className="text-right shrink-0">
                     {isLoading ? <div className="h-5 w-20 rounded animate-pulse" style={{ background: "var(--wt-surface-3)" }} />
