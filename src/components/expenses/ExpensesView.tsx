@@ -244,36 +244,40 @@ export function ExpensesView() {
             {visibleTransactions.map((tx, idx) => (
               <div key={tx.id} className="flex items-center justify-between px-4 py-3 transition-colors group"
                 style={{ background: "var(--wt-surface)", borderTop: idx > 0 ? "1px solid var(--wt-border)" : "none" }}>
+                {/* Left: badge + title + date */}
                 <div className="flex items-center gap-3 min-w-0">
                   <CategoryBadge category={tx.category} />
                   <div className="min-w-0">
                     <p className="truncate" style={{ fontSize: "14px", fontWeight: 300, color: "var(--wt-text)", fontFeatureSettings: '"ss01"' }}>{tx.description}</p>
                     <p style={{ fontSize: "11px", color: "var(--wt-muted)", fontFeatureSettings: '"ss01"' }}>{formatDate(tx.date, locale)}</p>
-                    {tx.notes && tx.notes !== "__demo__" && (
-                      <p className="truncate opacity-0 group-hover:opacity-100 transition-opacity duration-150"
-                        style={{ fontSize: "11px", color: "#533afd", fontFeatureSettings: '"ss01"', marginTop: "2px" }}>
-                        💬 {tx.notes}
-                      </p>
-                    )}
                   </div>
                 </div>
-                <div className="relative flex items-center ml-4 flex-shrink-0">
-                  <div className="absolute right-full mr-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button onClick={() => openEdit(tx)}
-                      className="px-1.5 py-0.5"
-                      style={{ color: "#533afd", background: "rgba(83,58,253,0.08)", border: "none", cursor: "pointer", borderRadius: "4px", lineHeight: 1 }}
-                      title="Edit">
-                      <svg width="12" height="12" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M11.5 2.5a1.414 1.414 0 0 1 2 2L5 13H3v-2L11.5 2.5Z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round"/>
-                      </svg>
-                    </button>
-                    <button onClick={() => tx.id && handleDelete(tx.id)}
-                      className="text-[11px] px-1.5 py-0.5"
-                      style={{ color: "#ea2261", background: "rgba(234,34,97,0.08)", border: "none", cursor: "pointer", borderRadius: "4px" }}>✕</button>
+                {/* Right: buttons (hover) + amount + note (hover) */}
+                <div className="relative flex items-end flex-col ml-4 flex-shrink-0 gap-0.5">
+                  <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
+                      <button onClick={() => openEdit(tx)}
+                        className="px-1.5 py-0.5"
+                        style={{ color: "#533afd", background: "rgba(83,58,253,0.08)", border: "none", cursor: "pointer", borderRadius: "4px", lineHeight: 1 }}
+                        title="Edit">
+                        <svg width="12" height="12" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M11.5 2.5a1.414 1.414 0 0 1 2 2L5 13H3v-2L11.5 2.5Z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round"/>
+                        </svg>
+                      </button>
+                      <button onClick={() => tx.id && handleDelete(tx.id)}
+                        className="text-[11px] px-1.5 py-0.5"
+                        style={{ color: "#ea2261", background: "rgba(234,34,97,0.08)", border: "none", cursor: "pointer", borderRadius: "4px" }}>✕</button>
+                    </div>
+                    <span style={{ fontSize: "14px", fontWeight: 400, fontFeatureSettings: '"tnum"', fontVariantNumeric: "tabular-nums", color: tx.type === "income" ? "#108c3d" : "var(--wt-text)", whiteSpace: "nowrap" }}>
+                      {tx.type === "income" ? "+" : "-"}{formatCurrency(tx.amount, currency)}
+                    </span>
                   </div>
-                  <span style={{ fontSize: "14px", fontWeight: 400, fontFeatureSettings: '"tnum"', fontVariantNumeric: "tabular-nums", color: tx.type === "income" ? "#108c3d" : "var(--wt-text)", whiteSpace: "nowrap" }}>
-                    {tx.type === "income" ? "+" : "-"}{formatCurrency(tx.amount, currency)}
-                  </span>
+                  {tx.notes && tx.notes !== "__demo__" && (
+                    <p className="opacity-0 group-hover:opacity-100 transition-opacity duration-150 truncate"
+                      style={{ fontSize: "11px", color: "#533afd", fontFeatureSettings: '"ss01"', maxWidth: "220px", textAlign: "right" }}>
+                      💬 {tx.notes}
+                    </p>
+                  )}
                 </div>
               </div>
             ))}
