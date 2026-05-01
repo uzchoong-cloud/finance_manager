@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { useI18n } from "@/lib/i18n";
-import { formatCurrency, formatPercent } from "@/lib/format";
+import type { Currency } from "@/lib/i18n";
+import { formatCurrency } from "@/lib/format";
 import type { StockWithValue } from "@/types";
 
 const COLORS = [
@@ -10,11 +11,16 @@ const COLORS = [
   "#8b5cf6", "#f97316", "#10b981", "#e879f9", "var(--wt-muted)",
 ];
 
+function asCurrency(c: string): Currency {
+  return (c === "KRW" || c === "HKD") ? c : "USD";
+}
+
 interface Slice {
   ticker: string;
   costBasis: number;
   pct: number;
   color: string;
+  currency: string;
 }
 
 function polarToCartesian(cx: number, cy: number, r: number, angleDeg: number) {
@@ -23,7 +29,6 @@ function polarToCartesian(cx: number, cy: number, r: number, angleDeg: number) {
 }
 
 function arcPath(cx: number, cy: number, outerR: number, innerR: number, start: number, end: number) {
-  // Clamp to avoid full-circle degenerate case
   const sweep = Math.min(end - start, 359.999);
   const o1 = polarToCartesian(cx, cy, outerR, start);
   const o2 = polarToCartesian(cx, cy, outerR, start + sweep);
@@ -38,7 +43,7 @@ interface Props {
 }
 
 export function AllocationChart({ holdings }: Props) {
-  const { t, currency } = useI18n();
+  const { t, currency: profileCurrency } = useI18n();
   const [hovered, setHovered] = useState<string | null>(null);
 
   const eligible = holdings.filter((h) => h.costBasis > 0);
@@ -46,14 +51,19 @@ export function AllocationChart({ holdings }: Props) {
 
   const total = eligible.reduce((s, h) => s + h.costBasis, 0);
 
+  // If all holdings share one currency we can show a meaningful total
+  const allCurrencies = [...new Set(eligible.map((h) => h.currency))];
+  const singleCurrency = allCurrencies.length === 1;
+  const summaryCurrency: Currency = singleCurrency ? asCurrency(allCurrencies[0]) : profileCurrency;
+
   const slices: Slice[] = eligible.map((h, i) => ({
     ticker: h.ticker,
     costBasis: h.costBasis,
     pct: (h.costBasis / total) * 100,
     color: COLORS[i % COLORS.length],
+    currency: h.currency,
   }));
 
-  // Build arc segments
   const cx = 110, cy = 110, outerR = 90, innerR = 56;
   let cursor = 0;
   const segments = slices.map((s) => {
@@ -96,12 +106,16 @@ export function AllocationChart({ holdings }: Props) {
               <>
                 <text x={cx} y={cy - 10} textAnchor="middle" style={{ fontSize: 13, fontWeight: 500, fill: "var(--wt-text)", fontFamily: "inherit" }}>{active.ticker}</text>
                 <text x={cx} y={cy + 8} textAnchor="middle" style={{ fontSize: 11, fill: "var(--wt-muted)", fontFamily: "inherit" }}>{active.pct.toFixed(1)}%</text>
-                <text x={cx} y={cy + 24} textAnchor="middle" style={{ fontSize: 10, fill: "var(--wt-muted)", fontFamily: "inherit" }}>{formatCurrency(active.costBasis, currency)}</text>
+                <text x={cx} y={cy + 24} textAnchor="middle" style={{ fontSize: 10, fill: "var(--wt-muted)", fontFamily: "inherit" }}>
+                  {formatCurrency(active.costBasis, asCurrency(active.currency))}
+                </text>
               </>
             ) : (
               <>
                 <text x={cx} y={cy - 6} textAnchor="middle" style={{ fontSize: 11, fill: "var(--wt-muted)", fontFamily: "inherit" }}>{t.portfolio.costBasis}</text>
-                <text x={cx} y={cy + 12} textAnchor="middle" style={{ fontSize: 13, fontWeight: 500, fill: "var(--wt-text)", fontFamily: "inherit" }}>{formatCurrency(total, currency)}</text>
+                <text x={cx} y={cy + 12} textAnchor="middle" style={{ fontSize: 13, fontWeight: 500, fill: "var(--wt-text)", fontFamily: "inherit" }}>
+                  {singleCurrency ? formatCurrency(total, summaryCurrency) : "—"}
+                </text>
               </>
             )}
           </svg>
@@ -124,7 +138,9 @@ export function AllocationChart({ holdings }: Props) {
                   <span style={{ fontSize: "13px", fontWeight: 400, color: "var(--wt-text)", fontFeatureSettings: '"ss01"' }}>{s.ticker}</span>
                 </div>
                 <div className="flex items-center gap-3 ml-2 shrink-0">
-                  <span style={{ fontSize: "12px", color: "var(--wt-muted)", fontFeatureSettings: '"tnum"' }}>{formatCurrency(s.costBasis, currency)}</span>
+                  <span style={{ fontSize: "12px", color: "var(--wt-muted)", fontFeatureSettings: '"tnum"' }}>
+                    {formatCurrency(s.costBasis, asCurrency(s.currency))}
+                  </span>
                   <span style={{ fontSize: "12px", color: "var(--wt-text-2)", fontFeatureSettings: '"tnum"', fontWeight: 500, minWidth: 40, textAlign: "right" }}>{s.pct.toFixed(1)}%</span>
                 </div>
               </div>

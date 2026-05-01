@@ -237,18 +237,20 @@ export async function skipRecurring(recurring: RecurringTransaction, dueDate: st
 // ─── Price cache (localStorage, 5 min TTL) ────────────────────
 const PRICE_TTL_MS = 5 * 60 * 1000;
 
-export function getCachedPrice(ticker: string): number | null {
+interface PriceCache { price: number; currency: string; fetchedAt: number }
+
+export function getCachedPrice(ticker: string): { price: number; currency: string } | null {
   if (typeof window === "undefined") return null;
   try {
     const raw = localStorage.getItem(`price_${ticker}`);
     if (!raw) return null;
-    const { price, fetchedAt } = JSON.parse(raw) as { price: number; fetchedAt: number };
+    const { price, currency, fetchedAt } = JSON.parse(raw) as PriceCache;
     if (Date.now() - fetchedAt > PRICE_TTL_MS) return null;
-    return price;
+    return { price, currency: currency ?? "USD" };
   } catch { return null; }
 }
 
-export function setCachedPrice(ticker: string, price: number): void {
+export function setCachedPrice(ticker: string, price: number, currency: string): void {
   if (typeof window === "undefined") return;
-  localStorage.setItem(`price_${ticker}`, JSON.stringify({ price, fetchedAt: Date.now() }));
+  localStorage.setItem(`price_${ticker}`, JSON.stringify({ price, currency, fetchedAt: Date.now() }));
 }

@@ -66,6 +66,8 @@ export interface StockWithValue extends StockHolding {
   costBasis: number;
   gainLoss: number | null;
   gainLossPercent: number | null;
+  /** Currency of this holding's prices (e.g. "KRW", "USD") */
+  currency: string;
 }
 
 export interface PortfolioSummary {

@@ -12,6 +12,7 @@ interface FinanceState {
   recurringLoaded: boolean;
   stockHoldings: StockHolding[];
   stockPrices: Record<string, number>;
+  stockCurrencies: Record<string, string>;
   priceFetchState: PriceFetchState;
   transactionsLoaded: boolean;
   holdingsLoaded: boolean;
@@ -37,6 +38,7 @@ export const useFinanceStore = create<FinanceState>()(
     recurringLoaded: false,
     stockHoldings: [],
     stockPrices: {},
+    stockCurrencies: {},
     priceFetchState: {},
     transactionsLoaded: false,
     holdingsLoaded: false,
@@ -75,15 +77,23 @@ export const useFinanceStore = create<FinanceState>()(
           set((s) => ({ priceFetchState: { ...s.priceFetchState, [ticker]: "loading" } }));
           const cached = getCachedPrice(ticker);
           if (cached !== null) {
-            set((s) => ({ stockPrices: { ...s.stockPrices, [ticker]: cached }, priceFetchState: { ...s.priceFetchState, [ticker]: "idle" } }));
+            set((s) => ({
+              stockPrices: { ...s.stockPrices, [ticker]: cached.price },
+              stockCurrencies: { ...s.stockCurrencies, [ticker]: cached.currency },
+              priceFetchState: { ...s.priceFetchState, [ticker]: "idle" },
+            }));
             return;
           }
           try {
             const res = await fetch(`/api/price?ticker=${encodeURIComponent(ticker)}`);
             if (!res.ok) throw new Error();
-            const { price } = (await res.json()) as { price: number };
-            setCachedPrice(ticker, price);
-            set((s) => ({ stockPrices: { ...s.stockPrices, [ticker]: price }, priceFetchState: { ...s.priceFetchState, [ticker]: "idle" } }));
+            const { price, currency } = (await res.json()) as { price: number; currency: string };
+            setCachedPrice(ticker, price, currency);
+            set((s) => ({
+              stockPrices: { ...s.stockPrices, [ticker]: price },
+              stockCurrencies: { ...s.stockCurrencies, [ticker]: currency },
+              priceFetchState: { ...s.priceFetchState, [ticker]: "idle" },
+            }));
           } catch {
             set((s) => ({ priceFetchState: { ...s.priceFetchState, [ticker]: "error" } }));
           }
@@ -111,18 +121,25 @@ export const useFinanceStore = create<FinanceState>()(
     },
 
     getPortfolioSummary: (): PortfolioSummary => {
-      const { stockHoldings, stockPrices } = get();
+      const { stockHoldings, stockPrices, stockCurrencies } = get();
       const holdings: StockWithValue[] = stockHoldings.map((h) => {
+        // Infer currency: prefer fetched value, fall back to KRW for 6-digit tickers
+        const currency = stockCurrencies[h.ticker] ?? (/^\d{6}$/.test(h.ticker) ? "KRW" : "USD");
         const currentPrice = stockPrices[h.ticker] ?? null;
         const costBasis = h.shares * h.averageCostPerShare;
         const currentValue = currentPrice !== null ? currentPrice * h.shares : null;
         const gainLoss = currentValue !== null ? currentValue - costBasis : null;
         const gainLossPercent = gainLoss !== null && costBasis > 0 ? (gainLoss / costBasis) * 100 : null;
-        return { ...h, currentPrice, currentValue, costBasis, gainLoss, gainLossPercent };
+        return { ...h, currentPrice, currentValue, costBasis, gainLoss, gainLossPercent, currency };
       });
       const totalCostBasis = holdings.reduce((sum, h) => sum + h.costBasis, 0);
-      const hasAllPrices = holdings.every((h) => h.currentValue !== null);
-      const totalValue = hasAllPrices ? holdings.reduce((sum, h) => sum + (h.currentValue ?? 0), 0) : null;
+      const hasAllPrices = holdings.length > 0 && holdings.every((h) => h.currentValue !== null);
+      // Only sum totals when all holdings share the same currency (mixing USD + KRW is meaningless)
+      const currencies = [...new Set(holdings.map((h) => h.currency))];
+      const singleCurrency = currencies.length <= 1;
+      const totalValue = hasAllPrices && singleCurrency
+        ? holdings.reduce((sum, h) => sum + (h.currentValue ?? 0), 0)
+        : null;
       const totalGainLoss = totalValue !== null ? totalValue - totalCostBasis : null;
       const totalGainLossPercent = totalGainLoss !== null && totalCostBasis > 0 ? (totalGainLoss / totalCostBasis) * 100 : null;
       return { totalValue, totalCostBasis, totalGainLoss, totalGainLossPercent, holdings };

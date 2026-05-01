@@ -12,9 +12,18 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { formatCurrency, formatPercent, formatShares, todayISO } from "@/lib/format";
+import type { Currency } from "@/lib/i18n";
 import type { StockHolding } from "@/types";
 
 const CURRENCY_SYMBOL: Record<string, string> = { USD: "$", KRW: "₩", HKD: "HK$" };
+
+/** Returns true for 6-digit KRX stock codes (KOSPI / KOSDAQ) */
+const isKoreanTicker = (t: string) => /^\d{6}$/.test(t);
+
+/** Cast an arbitrary currency string to our supported Currency union */
+function asCurrency(c: string): Currency {
+  return (c === "KRW" || c === "HKD") ? c : "USD";
+}
 
 type DialogMode = "add" | "buy" | "sell";
 
@@ -74,6 +83,10 @@ export function PortfolioView() {
   const symbol = CURRENCY_SYMBOL[currency] ?? "$";
 
   const { totalValue, totalCostBasis, totalGainLoss, totalGainLossPercent, holdings } = getPortfolioSummary();
+
+  // If all holdings share one currency use it for the summary totals; otherwise fall back to profile currency
+  const holdingCurrencies = [...new Set(holdings.map((h) => h.currency))];
+  const summaryCurrency: Currency = holdingCurrencies.length === 1 ? asCurrency(holdingCurrencies[0]) : currency;
 
   const resetForm = () => { setTicker(""); setName(""); setShares(""); setPrice(""); setDate(todayISO()); setNotes(""); setSelectedHolding(null); };
   const openAdd = () => { resetForm(); setDialogMode("add"); setOpen(true); };
@@ -167,9 +180,9 @@ export function PortfolioView() {
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <StatCard label={p.portfolioValue} value={totalValue === null ? t.common.fetching : formatCurrency(totalValue, currency)} trend="neutral" />
-        <StatCard label={p.costBasis} value={formatCurrency(totalCostBasis, currency)} trend="neutral" />
-        <StatCard label={p.totalReturn} value={totalGainLoss === null ? "—" : `${totalGainLoss >= 0 ? "+" : ""}${formatCurrency(totalGainLoss, currency)}`} subValue={totalGainLossPercent !== null ? formatPercent(totalGainLossPercent) : undefined} trend={totalGainLoss === null ? "neutral" : totalGainLoss >= 0 ? "up" : "down"} />
+        <StatCard label={p.portfolioValue} value={totalValue === null ? t.common.fetching : formatCurrency(totalValue, summaryCurrency)} trend="neutral" />
+        <StatCard label={p.costBasis} value={formatCurrency(totalCostBasis, summaryCurrency)} trend="neutral" />
+        <StatCard label={p.totalReturn} value={totalGainLoss === null ? "—" : `${totalGainLoss >= 0 ? "+" : ""}${formatCurrency(totalGainLoss, summaryCurrency)}`} subValue={totalGainLossPercent !== null ? formatPercent(totalGainLossPercent) : undefined} trend={totalGainLoss === null ? "neutral" : totalGainLoss >= 0 ? "up" : "down"} />
       </div>
 
       {holdings.length > 0 && <AllocationChart holdings={holdings} />}
@@ -205,9 +218,9 @@ export function PortfolioView() {
                       : isError ? <span style={{ fontSize: "12px", color: "#ea2261" }}>{p.priceUnavailable}</span>
                       : h.currentValue !== null ? (
                         <>
-                          <p style={{ fontSize: "15px", fontWeight: 400, fontFeatureSettings: '"tnum"', color: "var(--wt-text)" }}>{formatCurrency(h.currentValue, currency)}</p>
+                          <p style={{ fontSize: "15px", fontWeight: 400, fontFeatureSettings: '"tnum"', color: "var(--wt-text)" }}>{formatCurrency(h.currentValue, asCurrency(h.currency))}</p>
                           <p style={{ fontSize: "12px", fontFeatureSettings: '"tnum"', color: gainColor }}>
-                            {h.gainLoss !== null && h.gainLoss >= 0 ? "+" : ""}{h.gainLoss !== null ? formatCurrency(h.gainLoss, currency) : ""}{h.gainLossPercent !== null ? ` (${formatPercent(h.gainLossPercent)})` : ""}
+                            {h.gainLoss !== null && h.gainLoss >= 0 ? "+" : ""}{h.gainLoss !== null ? formatCurrency(h.gainLoss, asCurrency(h.currency)) : ""}{h.gainLossPercent !== null ? ` (${formatPercent(h.gainLossPercent)})` : ""}
                           </p>
                         </>
                       ) : <span style={{ fontSize: "12px", color: "var(--wt-muted)" }}>—</span>}
@@ -215,8 +228,8 @@ export function PortfolioView() {
                 </div>
                 <div className="mt-3 pt-3 flex items-center justify-between" style={{ borderTop: "1px solid var(--wt-border)" }}>
                   <span style={{ fontSize: "12px", color: "var(--wt-muted)", fontFeatureSettings: '"ss01"' }}>
-                    {p.avgCost}: <span style={{ fontFeatureSettings: '"tnum"', color: "var(--wt-text-2)" }}>{formatCurrency(h.averageCostPerShare, currency)}</span>
-                    {" · "}{p.basis}: <span style={{ fontFeatureSettings: '"tnum"', color: "var(--wt-text-2)" }}>{formatCurrency(h.costBasis, currency)}</span>
+                    {p.avgCost}: <span style={{ fontFeatureSettings: '"tnum"', color: "var(--wt-text-2)" }}>{formatCurrency(h.averageCostPerShare, asCurrency(h.currency))}</span>
+                    {" · "}{p.basis}: <span style={{ fontFeatureSettings: '"tnum"', color: "var(--wt-text-2)" }}>{formatCurrency(h.costBasis, asCurrency(h.currency))}</span>
                   </span>
                   <div className="flex gap-2">
                     <button onClick={() => openBuy(h)} style={{ fontSize: "11px", color: "#533afd", background: "rgba(83,58,253,0.06)", border: "1px solid rgba(83,58,253,0.2)", borderRadius: "4px", padding: "3px 8px", cursor: "pointer" }}>{p.buy}</button>
@@ -324,6 +337,18 @@ export function PortfolioView() {
             <DialogTitle style={{ fontSize: "1.125rem", fontWeight: 300, color: "var(--wt-text)", fontFeatureSettings: '"ss01"', letterSpacing: "-0.2px" }}>{dialogTitle}</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4 pt-2">
+            {(() => {
+              // Determine the active ticker's currency for the form
+              const formTicker = dialogMode === "add" ? ticker : (selectedHolding?.ticker ?? "");
+              const formIsKrw = isKoreanTicker(formTicker);
+              const formCurrency: Currency = formIsKrw ? "KRW" : currency;
+              const formSymbol = CURRENCY_SYMBOL[formCurrency] ?? "$";
+              const priceStep = formIsKrw ? "1" : "0.01";
+              const priceMin = formIsKrw ? "1" : "0.01";
+              const pricePlaceholder = formIsKrw ? "75000" : "150.00";
+
+              return (
+            <>
             {dialogMode === "add" && (
               <>
                 <div className="space-y-1">
@@ -344,9 +369,9 @@ export function PortfolioView() {
               <div className="space-y-1">
                 <Label style={{ fontFeatureSettings: '"ss01"', color: "var(--wt-text-2)", fontSize: "13px" }}>{p.priceLabel}</Label>
                 <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[13px]" style={{ color: "var(--wt-muted)" }}>{symbol}</span>
-                  <Input type="number" min="0.01" step="0.01" placeholder="150.00" value={price} onChange={(e) => setPrice(e.target.value)} required
-                    style={{ paddingLeft: currency === "HKD" ? "44px" : "28px", borderRadius: "4px", border: "1px solid var(--wt-border)", fontSize: "14px", fontFeatureSettings: '"tnum"' }} />
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[13px]" style={{ color: "var(--wt-muted)" }}>{formSymbol}</span>
+                  <Input type="number" min={priceMin} step={priceStep} placeholder={pricePlaceholder} value={price} onChange={(e) => setPrice(e.target.value)} required
+                    style={{ paddingLeft: formCurrency === "HKD" ? "44px" : "28px", borderRadius: "4px", border: "1px solid var(--wt-border)", fontSize: "14px", fontFeatureSettings: '"tnum"' }} />
                 </div>
               </div>
             </div>
@@ -362,12 +387,15 @@ export function PortfolioView() {
             )}
             {shares && price && (
               <div className="rounded px-3 py-2 text-[13px]" style={{ background: "rgba(83,58,253,0.04)", border: "1px solid rgba(83,58,253,0.15)", borderRadius: "4px", fontFeatureSettings: '"tnum"', color: "var(--wt-text-2)" }}>
-                {p.total}: {formatCurrency(parseFloat(shares) * parseFloat(price), currency)}
+                {p.total}: {formatCurrency(parseFloat(shares) * parseFloat(price), formCurrency)}
               </div>
             )}
             <Button type="submit" disabled={saving} className="w-full" style={{ background: "#533afd", color: "#fff", borderRadius: "4px", fontFeatureSettings: '"ss01"', fontWeight: 400, fontSize: "14px", border: "none" }}>
               {saving ? t.common.saving : dialogMode === "add" ? p.submitAdd : dialogMode === "buy" ? p.submitBuy : p.submitSell}
             </Button>
+            </>
+              );
+            })()}
           </form>
         </DialogContent>
       </Dialog>
