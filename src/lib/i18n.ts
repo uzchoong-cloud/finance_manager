@@ -250,6 +250,8 @@ const translations = {
       startingBalanceSection: "Starting Balance",
       startingBalanceHint:
         "This is your balance before using the app. It's added on top of your recorded transactions.",
+      categoriesSection: "Categories",
+      manageCategories: "Manage categories →",
       saveChanges: "Save changes",
       saved: "Settings saved",
       saveError: "Failed to save settings",
@@ -265,6 +267,16 @@ const translations = {
       changePassword: "Change password",
       passwordUpdated: "Password updated",
       passwordError: "Failed to update password",
+    },
+    categoryManager: {
+      title: "Manage Categories",
+      namePlaceholder: "Category name",
+      addBtn: "+ Add category",
+      addSuccess: (name: string) => `"${name}" added`,
+      deleteConfirm: (name: string, count: number) =>
+        `"${name}" is used in ${count} transaction${count === 1 ? "" : "s"}. Delete anyway?`,
+      deleteConfirmEmpty: (name: string) => `Delete "${name}"?`,
+      saveError: "Failed to save",
     },
   },
 
@@ -513,6 +525,8 @@ const translations = {
       startingBalanceSection: "초기 잔액",
       startingBalanceHint:
         "앱 사용 전 보유하고 있던 잔액입니다. 기록된 거래 금액에 더해져 순자산을 계산합니다.",
+      categoriesSection: "카테고리",
+      manageCategories: "카테고리 관리 →",
       saveChanges: "변경사항 저장",
       saved: "설정이 저장되었습니다",
       saveError: "설정 저장에 실패했습니다",
@@ -528,6 +542,16 @@ const translations = {
       changePassword: "비밀번호 변경",
       passwordUpdated: "비밀번호가 변경되었습니다",
       passwordError: "비밀번호 변경에 실패했습니다",
+    },
+    categoryManager: {
+      title: "카테고리 관리",
+      namePlaceholder: "카테고리 이름",
+      addBtn: "+ 카테고리 추가",
+      addSuccess: (name: string) => `"${name}" 추가됨`,
+      deleteConfirm: (name: string, count: number) =>
+        `"${name}"은(는) ${count}개의 거래에 사용 중입니다. 삭제하시겠습니까?`,
+      deleteConfirmEmpty: (name: string) => `"${name}"을(를) 삭제하시겠습니까?`,
+      saveError: "저장에 실패했습니다",
     },
   },
 } as const;

@@ -12,16 +12,14 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { formatCurrency, todayISO } from "@/lib/format";
-import type { RecurringTransaction, TransactionCategory, TransactionType, RecurringFrequency } from "@/types";
+import type { RecurringTransaction, TransactionType, RecurringFrequency } from "@/types";
 
-const CATEGORIES: TransactionCategory[] = ["food","transport","housing","utilities","healthcare","entertainment","shopping","education","salary","investment","freelance","other"];
-const INCOME_CATEGORIES: TransactionCategory[] = ["salary","investment","freelance","other"];
 const CURRENCY_SYMBOL: Record<string, string> = { USD: "$", KRW: "₩", HKD: "HK$" };
 
 interface FormState {
   type: TransactionType;
   amount: string;
-  category: TransactionCategory;
+  category: string;
   description: string;
   frequency: RecurringFrequency;
   startDate: string;
@@ -37,6 +35,7 @@ const defaultForm = (): FormState => ({
 export function RecurringManager() {
   const recurringTransactions = useFinanceStore((s) => s.recurringTransactions);
   const loadRecurring = useFinanceStore((s) => s.loadRecurring);
+  const categories = useFinanceStore((s) => s.categories);
   const { t, currency } = useI18n();
   const r = t.recurring;
   const ex = t.expenses;
@@ -47,11 +46,9 @@ export function RecurringManager() {
   const [form, setForm] = useState<FormState>(defaultForm());
   const [saving, setSaving] = useState(false);
 
-  const visibleCategories = form.type === "income"
-    ? INCOME_CATEGORIES
-    : CATEGORIES.filter((c) => !INCOME_CATEGORIES.includes(c));
+  const defaultCategory = categories[0]?.key ?? "other";
 
-  const openAdd = () => { setEditing(null); setForm(defaultForm()); setOpen(true); };
+  const openAdd = () => { setEditing(null); setForm({ ...defaultForm(), category: defaultCategory }); setOpen(true); };
   const openEdit = (rule: RecurringTransaction) => {
     setEditing(rule);
     setForm({
@@ -65,7 +62,7 @@ export function RecurringManager() {
   const set = (patch: Partial<FormState>) => setForm((f) => ({ ...f, ...patch }));
 
   const handleTypeChange = (type: TransactionType) => {
-    set({ type, category: type === "income" ? "salary" : "housing" });
+    set({ type, category: defaultCategory });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -203,13 +200,13 @@ export function RecurringManager() {
 
             <div className="space-y-1">
               <Label style={labelStyle}>{ex.categoryLabel}</Label>
-              <Select value={form.category} onValueChange={(v) => set({ category: v as TransactionCategory })}>
+              <Select value={form.category} onValueChange={(v) => v && set({ category: v })}>
                 <SelectTrigger style={{ borderRadius: "4px", border: "1px solid var(--wt-border)", fontSize: "13px" }}>
-                  <span>{ex.categories[form.category]}</span>
+                  <span>{categories.find((c) => c.key === form.category)?.label ?? form.category}</span>
                 </SelectTrigger>
                 <SelectContent>
-                  {visibleCategories.map((c) => (
-                    <SelectItem key={c} value={c} style={{ fontSize: "13px" }}>{ex.categories[c]}</SelectItem>
+                  {categories.map((c) => (
+                    <SelectItem key={c.key} value={c.key} style={{ fontSize: "13px" }}>{c.label}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>

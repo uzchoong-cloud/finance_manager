@@ -6,6 +6,7 @@ import { useAuthStore } from "@/store/useAuthStore";
 import { useI18n } from "@/lib/i18n";
 import { useFinanceStore } from "@/store/useFinanceStore";
 import { seedDemoData, clearDemoData, hasDemoData } from "@/lib/demo";
+import { CategoryManagerDialog } from "./CategoryManagerDialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -46,6 +47,7 @@ export function SettingsDialog({ open, onOpenChange }: Props) {
   const [confirmPassword, setConfirmPassword] = useState("");
 
   const [saving, setSaving] = useState(false);
+  const [catOpen, setCatOpen] = useState(false);
   const [demoLoading, setDemoLoading] = useState(false);
   const [demoLoaded, setDemoLoaded] = useState(false);
   const loadAll = useFinanceStore((s) => s.loadAll);
@@ -151,6 +153,7 @@ export function SettingsDialog({ open, onOpenChange }: Props) {
   const divider: React.CSSProperties = { borderTop: "1px solid var(--wt-border)" };
 
   return (
+    <>
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent style={{ borderRadius: "8px", border: "1px solid var(--wt-border)", maxWidth: 440, maxHeight: "90vh", overflowY: "auto" }}>
         <DialogHeader>
@@ -258,6 +261,19 @@ export function SettingsDialog({ open, onOpenChange }: Props) {
             }
           </div>
 
+          {/* Categories */}
+          <div className="space-y-2.5" style={divider}>
+            <div className="flex items-center justify-between pt-5">
+              <p style={sectionLabel}>{s.categoriesSection}</p>
+              <button
+                type="button"
+                onClick={() => setCatOpen(true)}
+                style={{ fontSize: "12px", color: "#533afd", background: "none", border: "none", cursor: "pointer", fontFeatureSettings: '"ss01"' }}>
+                {s.manageCategories}
+              </button>
+            </div>
+          </div>
+
           {/* Demo Data */}
           <div className="space-y-2.5" style={divider}>
             <div className="pt-5">
@@ -307,5 +323,8 @@ export function SettingsDialog({ open, onOpenChange }: Props) {
         </form>
       </DialogContent>
     </Dialog>
+
+    <CategoryManagerDialog open={catOpen} onOpenChange={setCatOpen} />
+    </>
   );
 }

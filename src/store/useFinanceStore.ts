@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { subscribeWithSelector } from "zustand/middleware";
-import type { Transaction, StockHolding, StockWithValue, PortfolioSummary, ExpenseSummary, TransactionCategory, RecurringTransaction } from "@/types";
-import { getAllTransactions, getAllStockHoldings, getCachedPrice, setCachedPrice, getAllRecurring } from "@/lib/db";
+import type { Transaction, StockHolding, StockWithValue, PortfolioSummary, ExpenseSummary, TransactionCategory, RecurringTransaction, Category } from "@/types";
+import { getAllTransactions, getAllStockHoldings, getCachedPrice, setCachedPrice, getAllRecurring, getAllCategories, seedDefaultCategories } from "@/lib/db";
 
 
 interface PriceFetchState { [ticker: string]: "idle" | "loading" | "error" }
@@ -10,6 +10,8 @@ interface FinanceState {
   transactions: Transaction[];
   recurringTransactions: RecurringTransaction[];
   recurringLoaded: boolean;
+  categories: Category[];
+  categoriesLoaded: boolean;
   stockHoldings: StockHolding[];
   stockPrices: Record<string, number>;
   stockCurrencies: Record<string, string>;
@@ -21,6 +23,7 @@ interface FinanceState {
   loadTransactions: () => Promise<void>;
   loadStockHoldings: () => Promise<void>;
   loadRecurring: () => Promise<void>;
+  loadCategories: () => Promise<void>;
   loadAll: () => Promise<void>;
   setStockPrice: (ticker: string, price: number) => void;
   fetchStockPrices: () => Promise<void>;
@@ -36,6 +39,8 @@ export const useFinanceStore = create<FinanceState>()(
     transactions: [],
     recurringTransactions: [],
     recurringLoaded: false,
+    categories: [],
+    categoriesLoaded: false,
     stockHoldings: [],
     stockPrices: {},
     stockCurrencies: {},
@@ -60,9 +65,18 @@ export const useFinanceStore = create<FinanceState>()(
       set({ recurringTransactions, recurringLoaded: true });
     },
 
+    loadCategories: async () => {
+      let cats = await getAllCategories();
+      if (cats.length === 0) {
+        await seedDefaultCategories();
+        cats = await getAllCategories();
+      }
+      set({ categories: cats, categoriesLoaded: true });
+    },
+
     loadAll: async () => {
-      const { loadTransactions, loadStockHoldings, loadRecurring, fetchStockPrices } = get();
-      await Promise.all([loadTransactions(), loadStockHoldings(), loadRecurring()]);
+      const { loadTransactions, loadStockHoldings, loadRecurring, loadCategories, fetchStockPrices } = get();
+      await Promise.all([loadTransactions(), loadStockHoldings(), loadRecurring(), loadCategories()]);
       await fetchStockPrices();
     },
 

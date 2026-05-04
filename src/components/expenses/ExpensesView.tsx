@@ -17,10 +17,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { formatCurrency, formatDate, todayISO, getMonthName } from "@/lib/format";
-import type { Transaction, TransactionCategory, TransactionType } from "@/types";
-
-const CATEGORIES: TransactionCategory[] = ["food","transport","housing","utilities","healthcare","entertainment","shopping","education","salary","investment","freelance","other"];
-const INCOME_CATEGORIES: TransactionCategory[] = ["salary","investment","freelance","other"];
+import type { Transaction, TransactionType } from "@/types";
 
 const CURRENCY_SYMBOL: Record<string, string> = { USD: "$", KRW: "₩", HKD: "HK$" };
 
@@ -29,7 +26,7 @@ export function ExpensesView() {
   const [editingTx, setEditingTx] = useState<Transaction | null>(null);
   const [type, setType] = useState<TransactionType>("expense");
   const [amount, setAmount] = useState("");
-  const [category, setCategory] = useState<TransactionCategory>("food");
+  const [category, setCategory] = useState("food");
   const [description, setDescription] = useState("");
   const [notes, setNotes] = useState("");
   const [date, setDate] = useState(todayISO());
@@ -37,6 +34,7 @@ export function ExpensesView() {
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
 
   const profile = useAuthStore((s) => s.profile);
+  const categories = useFinanceStore((s) => s.categories);
   const loadTransactions = useFinanceStore((s) => s.loadTransactions);
   const selectedMonth = useFinanceStore((s) => s.selectedMonth);
   const selectedYear = useFinanceStore((s) => s.selectedYear);
@@ -65,14 +63,18 @@ export function ExpensesView() {
     [monthTransactions, selectedDate]
   );
 
+  const defaultCategory = (t: TransactionType) =>
+    categories.find((c) => t === "income" ? c.key === "salary" : c.key === "food")?.key
+    ?? categories[0]?.key ?? "other";
+
   const handleTypeChange = (newType: TransactionType) => {
     setType(newType);
-    setCategory(newType === "income" ? "salary" : "food");
+    setCategory(defaultCategory(newType));
   };
 
   const openAdd = () => {
     setEditingTx(null);
-    setType("expense"); setAmount(""); setCategory("food"); setDescription(""); setNotes(""); setDate(todayISO());
+    setType("expense"); setAmount(""); setCategory(defaultCategory("expense")); setDescription(""); setNotes(""); setDate(todayISO());
     setOpen(true);
   };
 
@@ -143,7 +145,6 @@ export function ExpensesView() {
     return selectedYear === now.getFullYear() && selectedMonth === now.getMonth() + 1;
   })();
 
-  const visibleCategories = type === "income" ? INCOME_CATEGORIES : CATEGORIES.filter((c) => !INCOME_CATEGORIES.includes(c));
   const listLabel = selectedDate
     ? new Date(selectedDate + "T00:00:00").toLocaleDateString(locale, { month: "long", day: "numeric" })
     : getMonthName(selectedMonth, locale);
@@ -187,14 +188,14 @@ export function ExpensesView() {
               </div>
               <div className="space-y-1">
                 <Label style={{ fontFeatureSettings: '"ss01"', color: "var(--wt-text-2)", fontSize: "13px" }}>{ex.categoryLabel}</Label>
-                <Select value={category} onValueChange={(v) => setCategory(v as TransactionCategory)}>
+                <Select value={category} onValueChange={(v) => v && setCategory(v)}>
                   <SelectTrigger style={{ borderRadius: "4px", border: "1px solid var(--wt-border)", fontSize: "13px", fontFeatureSettings: '"ss01"' }}>
-                    <span>{ex.categories[category]}</span>
+                    <span>{categories.find((c) => c.key === category)?.label ?? category}</span>
                   </SelectTrigger>
                   <SelectContent>
-                    {visibleCategories.map((c) => (
-                      <SelectItem key={c} value={c} style={{ fontSize: "13px", fontFeatureSettings: '"ss01"' }}>
-                        {ex.categories[c]}
+                    {categories.map((c) => (
+                      <SelectItem key={c.key} value={c.key} style={{ fontSize: "13px", fontFeatureSettings: '"ss01"' }}>
+                        {c.label}
                       </SelectItem>
                     ))}
                   </SelectContent>

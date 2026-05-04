@@ -100,3 +100,22 @@ CREATE POLICY "Users manage own stock transactions"
   ON public.stock_transactions FOR ALL
   USING (auth.uid() = user_id)
   WITH CHECK (auth.uid() = user_id);
+
+-- ── Categories ────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS public.categories (
+  id          uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id     uuid REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  key         text NOT NULL,
+  label       text NOT NULL,
+  color       text NOT NULL DEFAULT '#64748b',
+  sort_order  int  NOT NULL DEFAULT 0,
+  created_at  timestamptz DEFAULT now(),
+  UNIQUE(user_id, key)
+);
+
+ALTER TABLE public.categories ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users manage own categories"
+  ON public.categories FOR ALL
+  USING (auth.uid() = user_id)
+  WITH CHECK (auth.uid() = user_id);

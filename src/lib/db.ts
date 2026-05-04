@@ -1,5 +1,5 @@
 import { supabase } from "./supabase";
-import type { Transaction, StockHolding, StockTransaction, RecurringTransaction, TransactionType, TransactionCategory, RecurringFrequency } from "@/types";
+import type { Transaction, StockHolding, StockTransaction, RecurringTransaction, TransactionType, TransactionCategory, RecurringFrequency, Category } from "@/types";
 
 // ─── Transactions ─────────────────────────────────────────────
 
@@ -232,6 +232,81 @@ export async function skipRecurring(recurring: RecurringTransaction, dueDate: st
   const { error } = await supabase.from("recurring_transactions")
     .update({ next_due_date: next }).eq("id", recurring.id!);
   if (error) throw new Error(error.message);
+}
+
+// ─── Categories ───────────────────────────────────────────────
+
+const DEFAULT_CATEGORIES: Omit<Category, "id" | "userId">[] = [
+  { key: "food",          label: "Food",          color: "#c026d3", sortOrder: 0 },
+  { key: "transport",     label: "Transport",     color: "#533afd", sortOrder: 1 },
+  { key: "housing",       label: "Housing",       color: "#273951", sortOrder: 2 },
+  { key: "utilities",     label: "Utilities",     color: "#9b6829", sortOrder: 3 },
+  { key: "healthcare",    label: "Healthcare",    color: "#108c3d", sortOrder: 4 },
+  { key: "entertainment", label: "Entertainment", color: "#ea2261", sortOrder: 5 },
+  { key: "shopping",      label: "Shopping",      color: "#4434d4", sortOrder: 6 },
+  { key: "education",     label: "Education",     color: "#2e2b8c", sortOrder: 7 },
+  { key: "salary",        label: "Salary",        color: "#059669", sortOrder: 8 },
+  { key: "investment",    label: "Investment",    color: "#7c3aed", sortOrder: 9 },
+  { key: "freelance",     label: "Freelance",     color: "#be185d", sortOrder: 10 },
+  { key: "other",         label: "Other",         color: "#64748b", sortOrder: 11 },
+];
+
+function mapCategory(row: Record<string, unknown>): Category {
+  return {
+    id: row.id as string,
+    userId: row.user_id as string,
+    key: row.key as string,
+    label: row.label as string,
+    color: row.color as string,
+    sortOrder: Number(row.sort_order),
+  };
+}
+
+export async function getAllCategories(): Promise<Category[]> {
+  const { data, error } = await supabase
+    .from("categories").select("*").order("sort_order");
+  if (error) throw new Error(error.message);
+  return (data ?? []).map(mapCategory);
+}
+
+export async function addCategory(cat: Omit<Category, "id" | "userId">): Promise<void> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("Not authenticated");
+  const { error } = await supabase.from("categories").insert({
+    user_id: user.id, key: cat.key, label: cat.label,
+    color: cat.color, sort_order: cat.sortOrder,
+  });
+  if (error) throw new Error(error.message);
+}
+
+export async function updateCategory(id: string, data: Partial<Pick<Category, "label" | "color" | "sortOrder">>): Promise<void> {
+  const updates: Record<string, unknown> = {};
+  if (data.label !== undefined) updates.label = data.label;
+  if (data.color !== undefined) updates.color = data.color;
+  if (data.sortOrder !== undefined) updates.sort_order = data.sortOrder;
+  const { error } = await supabase.from("categories").update(updates).eq("id", id);
+  if (error) throw new Error(error.message);
+}
+
+export async function deleteCategory(id: string): Promise<void> {
+  const { error } = await supabase.from("categories").delete().eq("id", id);
+  if (error) throw new Error(error.message);
+}
+
+export async function countTransactionsForCategory(key: string): Promise<number> {
+  const { count } = await supabase
+    .from("transactions").select("id", { count: "exact", head: true }).eq("category", key);
+  return count ?? 0;
+}
+
+export async function seedDefaultCategories(): Promise<void> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return;
+  const rows = DEFAULT_CATEGORIES.map((c) => ({
+    user_id: user.id, key: c.key, label: c.label, color: c.color, sort_order: c.sortOrder,
+  }));
+  // upsert so re-running is safe
+  await supabase.from("categories").upsert(rows, { onConflict: "user_id,key" });
 }
 
 // ─── Price cache (localStorage, 5 min TTL) ────────────────────

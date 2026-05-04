@@ -1,9 +1,16 @@
 export type TransactionType = "expense" | "income";
 
-export type TransactionCategory =
-  | "food" | "transport" | "housing" | "utilities" | "healthcare"
-  | "entertainment" | "shopping" | "education" | "salary"
-  | "investment" | "freelance" | "other";
+/** Kept as string so user-defined category keys (UUIDs) work alongside built-in keys */
+export type TransactionCategory = string;
+
+export interface Category {
+  id?: string;
+  userId?: string;
+  key: string;       // stored in transactions.category — stable even if label changes
+  label: string;     // display name, user-editable
+  color: string;     // hex e.g. "#533afd"
+  sortOrder: number;
+}
 
 export interface Transaction {
   id?: string;
