@@ -80,6 +80,8 @@ export function PortfolioView() {
   const getPortfolioSummary = useFinanceStore((s) => s.getPortfolioSummary);
   const priceFetchState = useFinanceStore((s) => s.priceFetchState);
   const holdingsLoaded = useFinanceStore((s) => s.holdingsLoaded);
+  // Subscribe so the component re-renders whenever holdings change
+  useFinanceStore((s) => s.stockHoldings);
 
   const { t, currency } = useI18n();
   const p = t.portfolio;
@@ -126,6 +128,7 @@ export function PortfolioView() {
     if (!confirm(p.deleteConfirm(tickerStr))) return;
     await deleteStockHolding(holdingId);
     await loadStockHoldings();
+    await fetchStockPrices();
     toast.success(p.deleteSuccess(tickerStr));
   };
 

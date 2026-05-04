@@ -57,7 +57,20 @@ export const useFinanceStore = create<FinanceState>()(
 
     loadStockHoldings: async () => {
       const stockHoldings = await getAllStockHoldings();
-      set({ stockHoldings, holdingsLoaded: true });
+      const activeTickers = new Set(stockHoldings.map((h) => h.ticker));
+      // Prune price/state for tickers that no longer exist
+      set((s) => {
+        const priceFetchState = Object.fromEntries(
+          Object.entries(s.priceFetchState).filter(([t]) => activeTickers.has(t))
+        );
+        const stockPrices = Object.fromEntries(
+          Object.entries(s.stockPrices).filter(([t]) => activeTickers.has(t))
+        );
+        const stockCurrencies = Object.fromEntries(
+          Object.entries(s.stockCurrencies).filter(([t]) => activeTickers.has(t))
+        );
+        return { stockHoldings, holdingsLoaded: true, priceFetchState, stockPrices, stockCurrencies };
+      });
     },
 
     loadRecurring: async () => {

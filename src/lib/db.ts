@@ -6,7 +6,10 @@ import type { Transaction, StockHolding, StockTransaction, RecurringTransaction,
 export async function addTransaction(
   data: Omit<Transaction, "id" | "createdAt" | "userId">
 ): Promise<void> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("Not authenticated");
   const { error } = await supabase.from("transactions").insert({
+    user_id: user.id,
     type: data.type, amount: data.amount, category: data.category,
     description: data.description, date: data.date,
     notes: data.notes ?? null,
@@ -55,13 +58,15 @@ function mapTransaction(row: Record<string, unknown>): Transaction {
 export async function addStockHolding(
   ticker: string, name: string, shares: number, pricePerShare: number, date: string
 ): Promise<string> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("Not authenticated");
   const { data: holding, error: holdingErr } = await supabase
     .from("stock_holdings")
-    .insert({ ticker: ticker.toUpperCase(), name, shares, average_cost_per_share: pricePerShare })
+    .insert({ user_id: user.id, ticker: ticker.toUpperCase(), name, shares, average_cost_per_share: pricePerShare })
     .select().single();
   if (holdingErr) throw new Error(holdingErr.message);
   const { error: txErr } = await supabase.from("stock_transactions").insert({
-    holding_id: holding.id, ticker: ticker.toUpperCase(),
+    user_id: user.id, holding_id: holding.id, ticker: ticker.toUpperCase(),
     type: "buy", shares, price_per_share: pricePerShare, date,
   });
   if (txErr) throw new Error(txErr.message);
@@ -71,6 +76,8 @@ export async function addStockHolding(
 export async function buyShares(
   holdingId: string, shares: number, pricePerShare: number, date: string, notes?: string
 ): Promise<void> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("Not authenticated");
   const { data: h, error } = await supabase
     .from("stock_holdings").select("shares, average_cost_per_share, ticker").eq("id", holdingId).single();
   if (error || !h) throw new Error("Holding not found");
@@ -80,13 +87,15 @@ export async function buyShares(
     .update({ shares: totalShares, average_cost_per_share: newAvg, updated_at: new Date().toISOString() })
     .eq("id", holdingId);
   await supabase.from("stock_transactions").insert({
-    holding_id: holdingId, ticker: h.ticker, type: "buy", shares, price_per_share: pricePerShare, date, notes,
+    user_id: user.id, holding_id: holdingId, ticker: h.ticker, type: "buy", shares, price_per_share: pricePerShare, date, notes,
   });
 }
 
 export async function sellShares(
   holdingId: string, shares: number, pricePerShare: number, date: string, notes?: string
 ): Promise<void> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("Not authenticated");
   const { data: h, error } = await supabase
     .from("stock_holdings").select("shares, ticker").eq("id", holdingId).single();
   if (error || !h) throw new Error("Holding not found");
@@ -99,7 +108,7 @@ export async function sellShares(
       .update({ shares: remaining, updated_at: new Date().toISOString() }).eq("id", holdingId);
   }
   await supabase.from("stock_transactions").insert({
-    holding_id: holdingId, ticker: h.ticker, type: "sell", shares, price_per_share: pricePerShare, date, notes,
+    user_id: user.id, holding_id: holdingId, ticker: h.ticker, type: "sell", shares, price_per_share: pricePerShare, date, notes,
   });
 }
 
@@ -176,10 +185,13 @@ export async function getAllRecurring(): Promise<RecurringTransaction[]> {
 export async function addRecurring(
   data: Omit<RecurringTransaction, "id" | "userId" | "createdAt" | "nextDueDate">
 ): Promise<void> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("Not authenticated");
   const dayOfMonth = data.frequency === "monthly"
     ? parseInt(data.startDate.split("-")[2], 10)
     : null;
   const { error } = await supabase.from("recurring_transactions").insert({
+    user_id: user.id,
     type: data.type, amount: data.amount, category: data.category,
     description: data.description, frequency: data.frequency,
     start_date: data.startDate, end_date: data.endDate ?? null,

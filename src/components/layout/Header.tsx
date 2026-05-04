@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useI18n } from "@/lib/i18n";
@@ -63,14 +64,7 @@ export function Header() {
 
             {/* Left — logo */}
             <Link href="/" style={{ textDecoration: "none", display: "flex", alignItems: "center", flexShrink: 0 }}>
-              <svg width="28" height="28" viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <rect width="44" height="44" rx="10" fill="#533afd" />
-                <polyline points="6,32 10,20 14,26 18,14 22,22 28,10 38,6" fill="none" stroke="white" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
-                <circle cx="38" cy="6" r="2.2" fill="white" />
-              </svg>
-              <span style={{ marginLeft: 8, fontSize: "18px", fontWeight: 300, letterSpacing: "-0.4px", color: "#533afd", fontFeatureSettings: '"ss01"' }}>
-                Wealthtrackr
-              </span>
+              <Image src="/wealthtrackr-lockup.svg" alt="Wealthtrackr" width={160} height={28} priority />
             </Link>
 
             {/* Centre — navigation, absolutely centred so it's unaffected by left/right widths */}
